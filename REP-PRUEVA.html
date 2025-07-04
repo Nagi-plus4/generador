@@ -11,34 +11,34 @@
     * { user-select: none; }
     .hidden-controls { opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
     .show-controls { opacity: 1; pointer-events: auto; }
-    .text-outline { text-shadow: 1px 1px 2px black, -1px -1px 2px black; }
+    input[type=range] {
+      appearance: none; height: 4px; background: #aaa;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      appearance: none; width: 12px; height: 12px; background: red; border-radius: 50%;
+    }
+    .text-outline {
+      text-shadow: 1px 1px 2px black, -1px -1px 2px black;
+    }
     .icon-shadow svg { filter: drop-shadow(1px 1px 2px black); }
     .animate-press:active { transform: scale(0.9); transition: transform 0.1s ease; }
     .active-red { color: red !important; }
-    input[type=range] {
-      appearance: none; height: 4px; background: #555;
-    }
-    input[type=range]::-webkit-slider-thumb {
-      appearance: none; width: 12px; height: 12px; background: #f43f5e; border-radius: 50%;
-    }
   </style>
 </head>
 <body class="bg-black w-screen h-screen overflow-hidden">
 
 <script>
-  const params = new URLSearchParams(window.location.search);
-  const videoLink = params.get('linkmp4');
-  const titulo = params.get('titulo') || '';
-  const sigEpisodio = params.get('sig') || '#';
-  const capitulosURL = params.get('capitulos') || '#';
-  const posterURL = params.get('poster') || '';
-  const introStart = parseInt(params.get('intro')) || 0;
-  const introEnd = introStart + 20; // Saltar 20 segundos desde introStart
+  const urlParams = new URLSearchParams(window.location.search);
+  const videoLink = urlParams.get('linkmp4');
+  const titulo = urlParams.get('titulo') || '';
+  const sigEpisodio = urlParams.get('sig') || '#';
+  const capitulosURL = urlParams.get('capitulos') || '#';
+  const posterURL = urlParams.get('poster') || '';
+  const introEnd = parseInt(urlParams.get('intro')) || 0;
   const storageKey = `nagi-progress-${videoLink}`;
 </script>
 
 <div id="videoWrapper" class="w-screen h-screen fixed top-0 left-0 z-0">
-
   <!-- Portada -->
   <div id="cover" class="absolute inset-0 z-50 bg-black">
     <img id="posterImage" src="" class="w-full h-full object-cover" />
@@ -61,7 +61,7 @@
   <video id="video" class="w-full h-full object-cover" src="" playsinline></video>
 
   <!-- Saltar intro -->
-  <button id="btnSkipIntro" onclick="resetHideTimeout(); skipIntro()" class="absolute right-4 bottom-36 bg-white/20 text-white px-3 py-1 text-sm font-bold rounded z-50 backdrop-blur-sm hidden text-outline">
+  <button id="btnSkipIntro" onclick="resetHideTimeout(); skipIntro()" class="absolute right-4 bottom-36 bg-white/20 text-white px-3 py-1 text-sm font-bold rounded-none z-50 backdrop-blur-sm hidden text-outline">
     <i data-lucide="fast-forward" class="inline-block w-4 h-4 mr-1"></i> Saltar intro
   </button>
 
@@ -71,56 +71,49 @@
   </button>
 
   <!-- Título -->
-  <div id="episodeTitle" class="absolute top-2 left-2 z-10 text-white text-base font-semibold text-outline hidden-controls"></div>
+  <div id="episodeTitle" class="absolute top-2 left-2 z-10 text-white text-sm text-outline hidden-controls"></div>
 
   <!-- Controles -->
-  <div id="controls" class="absolute inset-0 flex flex-col justify-end px-4 pb-5 hidden-controls">
-    <!-- Barra superior -->
-    <div class="flex justify-between items-center mb-2">
-      <span class="text-white text-xs text-outline">Nagi+</span>
-      <button onclick="toggleFullscreen()" class="animate-press">
-        <i data-lucide="maximize" class="w-5 h-5 text-white"></i>
-      </button>
-    </div>
-
-    <!-- Barra de progreso -->
-    <div>
-      <input type="range" id="progress" min="0" value="0" step="1" class="w-full" />
-      <div class="flex justify-between text-xs text-white mt-1 text-outline">
-        <span id="currentTime">0:00</span>
-        <span id="totalTime">0:00</span>
+  <div id="controls" class="absolute inset-0 flex flex-col justify-end px-4 pt-2 pb-4 hidden-controls">
+    <div class="flex-1 flex items-center justify-center">
+      <div class="flex items-center justify-center gap-72">
+        <button onclick="resetHideTimeout(); skip(-10)" class="active:text-red-600 icon-shadow animate-press">
+          <i data-lucide="rotate-ccw" class="w-8 h-8 text-white"></i>
+        </button>
+        <button id="playPauseBtn" onclick="resetHideTimeout(); togglePlay()" class="animate-press active:text-red-600 icon-shadow">
+          <i id="playPauseIcon" data-lucide="pause" class="w-10 h-10 text-white"></i>
+        </button>
+        <button onclick="resetHideTimeout(); skip(10)" class="active:text-red-600 icon-shadow animate-press">
+          <i data-lucide="rotate-cw" class="w-8 h-8 text-white"></i>
+        </button>
       </div>
     </div>
 
-    <!-- Botones principales -->
-    <div class="flex justify-center items-center my-2 gap-6">
-      <button onclick="resetHideTimeout(); skip(-10)" class="active:text-red-600 icon-shadow animate-press">
-        <i data-lucide="rotate-ccw" class="w-7 h-7 text-white"></i>
-      </button>
-      <button id="playPauseBtn" onclick="resetHideTimeout(); togglePlay()" class="animate-press active:text-red-600 icon-shadow">
-        <i id="playPauseIcon" data-lucide="pause" class="w-10 h-10 text-white"></i>
-      </button>
-      <button onclick="resetHideTimeout(); skip(10)" class="active:text-red-600 icon-shadow animate-press">
-        <i data-lucide="rotate-cw" class="w-7 h-7 text-white"></i>
-      </button>
+    <!-- Barra progreso -->
+    <div>
+      <input type="range" id="progress" min="0" value="0" step="1" class="w-full" />
+      <div class="flex justify-between text-xs text-white mt-1 text-outline">
+        <span id="currentTime">0:00:00</span>
+        <span id="totalTime">0:00:00</span>
+      </div>
     </div>
 
     <!-- Controles inferiores -->
-    <div class="grid grid-cols-5 gap-2 text-white text-xs text-center">
-      <button onclick="toggleVolume()" class="flex flex-col items-center animate-press">
-        <i data-lucide="volume-2" class="w-5 h-5 mb-1"></i><span class="text-outline">Volumen</span>
+    <div id="bottomControls" class="grid grid-cols-5 text-white text-xs mt-2 gap-2 text-center">
+      <button onclick="resetHideTimeout(); toggleFullscreen()" class="flex flex-col items-center active:text-red-600 icon-shadow animate-press">
+        <i data-lucide="maximize" class="w-5 h-5 mb-1"></i><span class="text-outline">Pantalla completa</span>
       </button>
-      <button onclick="togglePlaybackSpeed()" class="flex flex-col items-center animate-press">
-        <i data-lucide="zap" class="w-5 h-5 mb-1"></i><span class="text-outline">Velocidad</span>
+      <button onclick="resetHideTimeout(); toggleVideoFit(this)" class="flex flex-col items-center icon-shadow animate-press" id="fitBtn">
+        <i data-lucide="move" class="w-5 h-5 mb-1"></i><span class="text-outline">Ajuste</span>
       </button>
-      <button onclick="toggleSubtitles()" class="flex flex-col items-center animate-press">
-        <i data-lucide="subtitles" class="w-5 h-5 mb-1"></i><span class="text-outline">Subtítulos</span>
+      <button onclick="location.href=capitulosURL" class="flex flex-col items-center active:text-red-600 icon-shadow animate-press">
+        <i data-lucide="layout-grid" class="w-5 h-5 mb-1"></i><span class="text-outline">Episodios</span>
       </button>
-      <button onclick="togglePictureInPicture()" class="flex flex-col items-center animate-press">
-        <i data-lucide="picture-in-picture" class="w-5 h-5 mb-1"></i><span class="text-outline">PIP</span>
+      <button id="lockBtn" onclick="toggleLock()" class="flex flex-col items-center active:text-red-600 icon-shadow animate-press">
+        <i id="lockIcon" data-lucide="lock" class="w-5 h-5 mb-1"></i><span id="lockText" class="text-outline">Bloquear</span>
       </button>
-      <button onclick="location.href=sigEpisodio" class="flex flex-col items-center animate-press">
-        <i data-lucide="chevron-right" class="w-5 h-5 mb-1"></i><span class="text-outline">Siguiente</span>
+      <button onclick="location.href=sigEpisodio" class="flex flex-col items-center active:text-red-600 icon-shadow animate-press">
+        <i data-lucide="chevron-right" class="w-5 h-5 mb-1"></i><span class="text-outline">Sig. Episodio</span>
       </button>
     </div>
   </div>
@@ -134,11 +127,21 @@
   const totalTimeEl = document.getElementById('totalTime');
   const controls = document.getElementById('controls');
   const unlockBtn = document.getElementById('unlockBtn');
+  const episodeTitle = document.getElementById('episodeTitle');
   const btnSkipIntro = document.getElementById('btnSkipIntro');
+  const lockBtn = document.getElementById('lockBtn');
+  const lockIcon = document.getElementById('lockIcon');
+  const lockText = document.getElementById('lockText');
   const videoWrapper = document.getElementById('videoWrapper');
+  const cover = document.getElementById('cover');
+  const loadingSpinner = document.getElementById('loadingSpinner');
+  const fitBtn = document.getElementById('fitBtn');
+
   let controlsVisible = true;
   let locked = false;
   let hideTimeout;
+  let isCoverMode = true;
+  let saveInterval;
 
   function togglePlay() {
     if (video.paused || video.ended) {
@@ -151,20 +154,26 @@
   }
 
   function reemplazarIcono(nuevoIcono) {
-    const btn = document.getElementById('playPauseIcon').parentNode;
+    const contenedor = document.getElementById('playPauseIcon').parentNode;
+    const viejoIcono = document.getElementById('playPauseIcon');
     const nuevo = document.createElement('i');
     nuevo.setAttribute('data-lucide', nuevoIcono);
     nuevo.className = 'w-10 h-10 text-white';
     nuevo.id = 'playPauseIcon';
-    btn.replaceChild(nuevo, btn.querySelector('#playPauseIcon'));
+    contenedor.replaceChild(nuevo, viejoIcono);
     lucide.createIcons();
   }
 
   function startVideo() {
-    document.getElementById('cover').classList.add('hidden');
+    cover.classList.add('hidden');
     video.play();
     toggleFullscreen();
+    showControls();
     lucide.createIcons();
+    // Guardar progreso cada 1 segundo
+    saveInterval = setInterval(() => {
+      localStorage.setItem(storageKey, video.currentTime);
+    }, 1000);
   }
 
   function skip(seconds) {
@@ -172,7 +181,7 @@
   }
 
   function skipIntro() {
-    video.currentTime = introEnd; // Saltar al final del intro
+    video.currentTime = introEnd;
     btnSkipIntro.classList.add("hidden");
   }
 
@@ -186,15 +195,18 @@
   }
 
   function formatTime(sec) {
-    const minutes = Math.floor(sec / 60);
+    const hours = Math.floor(sec / 3600).toString().padStart(1, '0');
+    const minutes = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
     const seconds = Math.floor(sec % 60).toString().padStart(2, '0');
-    return `${minutes}:${seconds}`;
+    return `${hours}:${minutes}:${seconds}`;
   }
 
   function showControls() {
     if (locked) return;
     controls.classList.add('show-controls');
     controls.classList.remove('hidden-controls');
+    episodeTitle.classList.add('show-controls');
+    episodeTitle.classList.remove('hidden-controls');
     controlsVisible = true;
     resetHideTimeout();
   }
@@ -203,7 +215,14 @@
     if (locked) return;
     controls.classList.remove('show-controls');
     controls.classList.add('hidden-controls');
+    episodeTitle.classList.remove('show-controls');
+    episodeTitle.classList.add('hidden-controls');
     controlsVisible = false;
+  }
+
+  function toggleControls() {
+    if (locked) return;
+    controlsVisible ? hideControls() : showControls();
   }
 
   function resetHideTimeout() {
@@ -212,28 +231,43 @@
     hideTimeout = setTimeout(hideControls, 3000);
   }
 
-  function togglePictureInPicture() {
-    if (document.pictureInPictureElement) {
-      document.exitPictureInPicture();
-    } else {
-      video.requestPictureInPicture();
-    }
+  function toggleLock() {
+    locked ? unlockControls() : lockControls();
   }
 
-  function togglePlaybackSpeed() {
-    video.playbackRate = video.playbackRate === 1 ? 1.5 : 1;
-    alert(`Velocidad: ${video.playbackRate}x`);
+  function lockControls() {
+    locked = true;
+    hideControls();
+    unlockBtn.classList.remove("hidden");
+    controls.classList.add("hidden");
+    btnSkipIntro.classList.add("hidden");
+    episodeTitle.classList.add("hidden");
+    lockBtn.classList.add("hidden");
+    lockIcon.setAttribute("data-lucide", "lock");
+    lockText.textContent = "Bloqueado";
+    lucide.createIcons();
   }
 
-  function toggleVolume() {
-    video.muted = !video.muted;
-    alert(video.muted ? 'Silenciado' : 'Sonido activado');
+  function unlockControls() {
+    locked = false;
+    showControls();
+    unlockBtn.classList.add("hidden");
+    controls.classList.remove("hidden");
+    episodeTitle.classList.remove("hidden");
+    lockBtn.classList.remove("hidden");
+    lockIcon.setAttribute("data-lucide", "unlock");
+    lockText.textContent = "Bloquear";
+    lucide.createIcons();
   }
 
-  function toggleSubtitles() {
-    alert('Subtítulos: No implementado');
+  function toggleVideoFit(btn) {
+    isCoverMode = !isCoverMode;
+    video.classList.toggle('object-cover', isCoverMode);
+    video.classList.toggle('object-contain', !isCoverMode);
+    btn.classList.toggle('text-red-600', !isCoverMode);
   }
 
+  // Eventos del video
   video.addEventListener('loadedmetadata', () => {
     progress.max = Math.floor(video.duration);
     totalTimeEl.textContent = formatTime(video.duration);
@@ -245,38 +279,34 @@
     progress.value = Math.floor(video.currentTime);
     currentTimeEl.textContent = formatTime(video.currentTime);
 
-    // Mostrar botón Saltar intro solo en el rango configurado
-    if (video.currentTime >= introStart && video.currentTime <= introEnd) {
+    // Mostrar botón Saltar intro solo entre 0:00:00 e introEnd
+    if (video.currentTime >= 0 && video.currentTime < introEnd) {
       if (!locked) btnSkipIntro.classList.remove("hidden");
     } else {
       btnSkipIntro.classList.add("hidden");
     }
   });
 
-  // Guardar progreso en localStorage cada segundo
-  setInterval(() => {
-    if (!video.paused && !video.ended) {
-      localStorage.setItem(storageKey, video.currentTime);
-    }
-  }, 1000);
-
-  video.addEventListener('waiting', () => document.getElementById('loadingSpinner').classList.remove("hidden"));
-  video.addEventListener('canplay', () => document.getElementById('loadingSpinner').classList.add("hidden"));
-  video.addEventListener('playing', () => document.getElementById('loadingSpinner').classList.add("hidden"));
+  video.addEventListener('waiting', () => loadingSpinner.classList.remove("hidden"));
+  video.addEventListener('canplay', () => loadingSpinner.classList.add("hidden"));
+  video.addEventListener('playing', () => loadingSpinner.classList.add("hidden"));
   progress.addEventListener('input', () => {
     resetHideTimeout();
     video.currentTime = progress.value;
   });
 
+  // Control de clic
   videoWrapper.addEventListener('click', e => {
     if (e.target.closest('button')) return;
-    controlsVisible ? hideControls() : showControls();
+    toggleControls();
   });
 
+  // Inicializar
   window.addEventListener('load', () => {
     lucide.createIcons();
     resetHideTimeout();
     video.src = videoLink;
+    episodeTitle.textContent = titulo;
     document.getElementById('posterImage').src = posterURL;
   });
 </script>
