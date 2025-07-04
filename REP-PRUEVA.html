@@ -17,24 +17,14 @@
     input[type=range]::-webkit-slider-thumb {
       appearance: none; width: 14px; height: 14px; background: #e11d48; border-radius: 50%; cursor: pointer;
     }
-    .text-outline {
-      text-shadow: 1px 1px 3px black, -1px -1px 3px black;
-    }
+    .text-outline { text-shadow: 1px 1px 3px black, -1px -1px 3px black; }
     .icon-shadow svg { filter: drop-shadow(1px 1px 2px black); }
     .animate-press:active { transform: scale(0.9); transition: transform 0.1s ease; }
     .active-red { color: #e11d48 !important; }
-    #loadingSpinner i {
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
+    #loadingSpinner i { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .fade-in { animation: fadeIn 0.5s ease forwards; }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   </style>
 </head>
 <body class="bg-black w-screen h-screen overflow-hidden">
@@ -47,9 +37,11 @@
   const capitulosURL = urlParams.get('capitulos') || '#';
   const posterURL = urlParams.get('poster') || '';
   const introStart = parseInt(urlParams.get('intro')) || 0;
-  const introEnd = introStart + 20;
+  const introEnd = introStart + 20; // Duración de la intro: 20s
   const outroStart = parseInt(urlParams.get('outro')) || 0;
-  const storageKey = `nagi-progress-${videoLink}`;
+
+  const progressKey = `nagi-progress-${videoLink}`;
+  const skipIntroKey = `nagi-skipintro-${videoLink}`;
 </script>
 
 <div id="videoWrapper" class="w-screen h-screen fixed top-0 left-0 z-0">
@@ -75,7 +67,7 @@
   <video id="video" class="w-full h-full object-cover" src="" playsinline preload="auto"></video>
 
   <!-- Saltar intro -->
-  <button id="btnSkipIntro" onclick="resetHideTimeout(); skipIntro()" class="absolute right-4 bottom-36 bg-white/30 text-white px-3 py-1 text-sm font-bold rounded z-50 backdrop-blur-md hidden text-outline animate-press">
+  <button id="btnSkipIntro" onclick="skipIntro()" class="absolute right-4 bottom-36 bg-white/30 text-white px-3 py-1 text-sm font-bold rounded z-50 backdrop-blur-md hidden text-outline animate-press">
     <i data-lucide="fast-forward" class="inline-block w-4 h-4 mr-1"></i> Saltar intro
   </button>
 
@@ -160,21 +152,21 @@
   function togglePlay() {
     if (video.paused || video.ended) {
       video.play();
-      reemplazarIcono('pause');
+      replaceIcon('pause');
     } else {
       video.pause();
-      reemplazarIcono('play');
+      replaceIcon('play');
     }
   }
 
-  function reemplazarIcono(nuevoIcono) {
-    const contenedor = document.getElementById('playPauseIcon').parentNode;
-    const viejoIcono = document.getElementById('playPauseIcon');
-    const nuevo = document.createElement('i');
-    nuevo.setAttribute('data-lucide', nuevoIcono);
-    nuevo.className = 'w-12 h-12 text-white';
-    nuevo.id = 'playPauseIcon';
-    contenedor.replaceChild(nuevo, viejoIcono);
+  function replaceIcon(newIcon) {
+    const container = document.getElementById('playPauseIcon').parentNode;
+    const oldIcon = document.getElementById('playPauseIcon');
+    const icon = document.createElement('i');
+    icon.setAttribute('data-lucide', newIcon);
+    icon.className = 'w-12 h-12 text-white';
+    icon.id = 'playPauseIcon';
+    container.replaceChild(icon, oldIcon);
     lucide.createIcons();
   }
 
@@ -192,7 +184,8 @@
 
   function skipIntro() {
     video.currentTime = introEnd;
-    btnSkipIntro.classList.add("hidden");
+    localStorage.setItem(skipIntroKey, 'true');
+    btnSkipIntro.classList.add('hidden');
   }
 
   function toggleFullscreen() {
@@ -273,22 +266,35 @@
   video.addEventListener('loadedmetadata', () => {
     progress.max = Math.floor(video.duration);
     totalTimeEl.textContent = formatTime(video.duration);
-    const savedTime = localStorage.getItem(storageKey);
+
+    // Restaurar progreso guardado
+    const savedTime = localStorage.getItem(progressKey);
     if (savedTime) video.currentTime = parseFloat(savedTime);
+
+    // Ocultar botón saltar intro si ya se saltó
+    if (localStorage.getItem(skipIntroKey) === 'true') {
+      btnSkipIntro.classList.add('hidden');
+    }
   });
 
   video.addEventListener('timeupdate', () => {
     progress.value = Math.floor(video.currentTime);
     currentTimeEl.textContent = formatTime(video.currentTime);
-    if (video.currentTime >= introStart && video.currentTime <= introEnd) {
-      if (!locked) btnSkipIntro.classList.remove("hidden");
+
+    // Mostrar botón Saltar Intro solo si no se ha saltado antes
+    if (video.currentTime >= introStart && video.currentTime <= introEnd && !localStorage.getItem(skipIntroKey)) {
+      btnSkipIntro.classList.remove("hidden");
     } else {
       btnSkipIntro.classList.add("hidden");
     }
+
+    // Guardar progreso cada segundo
+    localStorage.setItem(progressKey, video.currentTime);
+
+    // Saltar al siguiente episodio al final
     if (outroStart && video.currentTime >= outroStart - 1) {
       location.href = sigEpisodio;
     }
-    localStorage.setItem(storageKey, video.currentTime);
   });
 
   video.addEventListener('waiting', () => loadingSpinner.classList.remove("hidden"));
