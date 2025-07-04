@@ -115,15 +115,93 @@
     const episodeTitle = document.getElementById('episodeTitle');
 
     if (videoURL) video.src = videoURL;
-    episodeTitle.textContent = titulo;
+    episodeTitle.textContent = decodeURIComponent(titulo);
     document.getElementById("btnSiguiente").onclick = () => { if (sigURL) location.href = sigURL; };
     document.getElementById("btnEpisodios").onclick = () => { if (capitulosURL) location.href = capitulosURL; };
     document.getElementById("coverImage").src = poster.startsWith("http") ? poster : `https://image.tmdb.org/t/p/w780/${poster}`;
 
+    const btnSkipIntro = document.getElementById("btnSkipIntro");
+    const progress = document.getElementById("progress");
+    const currentTimeEl = document.getElementById("currentTime");
+    const totalTimeEl = document.getElementById("totalTime");
+    const loadingSpinner = document.getElementById("loadingSpinner");
+
+    function startVideo() {
+      document.getElementById("cover").classList.add("hidden");
+      video.play();
+      toggleFullscreen();
+      showControls();
+      lucide.createIcons();
+    }
+
     function skipIntro() {
       video.currentTime = introEnd;
-      document.getElementById("btnSkipIntro").classList.add("hidden");
+      btnSkipIntro.classList.add("hidden");
     }
+
+    function skip(seconds) { video.currentTime += seconds; }
+    function toggleFullscreen() {
+      const el = document.documentElement;
+      if (!document.fullscreenElement) el.requestFullscreen?.();
+      else document.exitFullscreen?.();
+    }
+
+    function showControls() {
+      document.getElementById('controls').classList.add('show-controls');
+      document.getElementById('controls').classList.remove('hidden-controls');
+      episodeTitle.classList.add('show-controls');
+      episodeTitle.classList.remove('hidden-controls');
+    }
+
+    function reemplazarIcono(nuevoIcono) {
+      const contenedor = document.getElementById('playPauseIcon').parentNode;
+      const viejoIcono = document.getElementById('playPauseIcon');
+      const nuevo = document.createElement('i');
+      nuevo.setAttribute('data-lucide', nuevoIcono);
+      nuevo.className = 'w-10 h-10 text-white';
+      nuevo.id = 'playPauseIcon';
+      contenedor.replaceChild(nuevo, viejoIcono);
+      lucide.createIcons();
+    }
+
+    document.getElementById("playPauseBtn").onclick = () => {
+      if (video.paused || video.ended) {
+        video.play(); reemplazarIcono("pause");
+      } else {
+        video.pause(); reemplazarIcono("play");
+      }
+    };
+
+    video.addEventListener('loadedmetadata', () => {
+      progress.max = Math.floor(video.duration);
+      totalTimeEl.textContent = formatTime(video.duration);
+    });
+
+    video.addEventListener('timeupdate', () => {
+      progress.value = Math.floor(video.currentTime);
+      currentTimeEl.textContent = formatTime(video.currentTime);
+      if (video.currentTime >= 0 && video.currentTime <= introEnd) btnSkipIntro.classList.remove("hidden");
+      else btnSkipIntro.classList.add("hidden");
+      if (idtmdb) localStorage.setItem(`progress_${idtmdb}`, video.currentTime);
+    });
+
+    video.addEventListener('canplay', () => loadingSpinner.classList.add("hidden"));
+    video.addEventListener('playing', () => loadingSpinner.classList.add("hidden"));
+    video.addEventListener('waiting', () => loadingSpinner.classList.remove("hidden"));
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    window.addEventListener("load", () => {
+      lucide.createIcons();
+      if (idtmdb) {
+        const saved = localStorage.getItem(`progress_${idtmdb}`);
+        if (saved) video.currentTime = parseFloat(saved);
+      }
+    });
   </script>
 </body>
 </html>
