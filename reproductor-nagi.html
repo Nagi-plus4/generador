@@ -1,308 +1,296 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Reproductor Nagi+</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
-    * { user-select: none; }
-    .hidden-controls { opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
-    .show-controls { opacity: 1; pointer-events: auto; }
-    input[type=range] {
-      appearance: none; height: 4px; background: #aaa;
-    }
-    input[type=range]::-webkit-slider-thumb {
-      appearance: none; width: 12px; height: 12px; background: red; border-radius: 50%;
-    }
-    .text-outline {
-      text-shadow: 1px 1px 2px black, -1px -1px 2px black;
-    }
-    .icon-shadow svg { filter: drop-shadow(1px 1px 2px black); }
-    .animate-press:active { transform: scale(0.9); transition: transform 0.1s ease; }
-    .active-red { color: red !important; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nagi+ Player</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide@latest/dist/lucide.css">
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        .player-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            background: #000;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+        .controls {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+        .controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .top-bar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 1.2em;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        .loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5em;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: none;
+        }
+        .button {
+            background: rgba(0,0,0,0.5);
+            border: none;
+            color: #fff;
+            margin: 2px;
+            padding: 5px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .progress-bar {
+            flex: 1;
+            appearance: none;
+            height: 5px;
+            background: #444;
+            border-radius: 5px;
+        }
+        .progress-bar::-webkit-slider-thumb {
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+        }
+        .intro-btn, .lock-btn, .unlock-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        .hidden-absolute {
+            display: none;
+        }
+    </style>
 </head>
-<body class="bg-black w-screen h-screen overflow-hidden">
+<body>
 
-<script>
-  const urlParams = new URLSearchParams(window.location.search);
-  const videoLink = urlParams.get('linkmp4');
-  const titulo = urlParams.get('titulo') || '';
-  const sigEpisodio = urlParams.get('sig') || '#';
-  const capitulosURL = urlParams.get('capitulos') || '#';
-  const posterURL = urlParams.get('poster') || '';
-  const introStart = parseInt(urlParams.get('intro')) || 0;
-  const introEnd = introStart + 20;
-  const storageKey = `nagi-progress-${videoLink}`;
-</script>
+<div class="player-container" id="player">
+    <video id="video" poster="">
+        <track id="subtitles" label="Español" kind="subtitles" srclang="es" default>
+    </video>
 
-<div id="videoWrapper" class="w-screen h-screen fixed top-0 left-0 z-0">
-  <!-- Portada -->
-  <div id="cover" class="absolute inset-0 z-50 bg-black">
-    <img id="posterImage" src="" class="w-full h-full object-cover" />
-    <button onclick="startVideo()" class="absolute inset-0 flex items-center justify-center">
-      <div class="bg-white/20 backdrop-blur-sm p-4 rounded-full text-white animate-press">
-        <i data-lucide="play" class="w-12 h-12"></i>
-      </div>
-    </button>
-  </div>
+    <div class="loading-spinner" id="loading">Cargando Nagi+...</div>
 
-  <!-- Spinner -->
-  <div id="loadingSpinner" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/60">
-    <div class="animate-spin text-white mb-4">
-      <i data-lucide="loader" class="w-10 h-10"></i>
+    <div class="top-bar" id="title">Título del episodio</div>
+
+    <button class="intro-btn hidden-absolute" id="skipIntro">Saltar intro</button>
+    <button class="lock-btn" id="lock"><i data-lucide="lock"></i></button>
+    <button class="unlock-btn hidden-absolute" id="unlock"><i data-lucide="unlock"></i></button>
+
+    <div class="controls" id="controls">
+        <div style="display: flex; justify-content: space-between;">
+            <button class="button" id="rewind"><i data-lucide="rotate-ccw"></i></button>
+            <button class="button" id="playPause"><i data-lucide="play"></i></button>
+            <button class="button" id="forward"><i data-lucide="rotate-cw"></i></button>
+            <button class="button" id="fitMode"><i data-lucide="maximize"></i></button>
+            <button class="button" id="fullscreen"><i data-lucide="maximize-2"></i></button>
+        </div>
+
+        <div class="progress-container">
+            <span id="currentTime">00:00</span>
+            <input type="range" id="progress" class="progress-bar" min="0" max="100" value="0">
+            <span id="duration">00:00</span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between;">
+            <button class="button" id="episodes">Episodios</button>
+            <button class="button" id="nextEpisode">Sig. Episodio</button>
+        </div>
     </div>
-    <div class="text-white text-sm font-semibold text-outline">Cargando Nagi+...</div>
-  </div>
-
-  <!-- Video -->
-  <video id="video" class="w-full h-full object-cover" src="" playsinline></video>
-
-  <!-- Saltar intro -->
-  <button id="btnSkipIntro" onclick="resetHideTimeout(); skipIntro()" class="absolute right-4 bottom-36 bg-white/20 text-white px-3 py-1 text-sm font-bold rounded-none z-50 backdrop-blur-sm hidden text-outline">
-    <i data-lucide="fast-forward" class="inline-block w-4 h-4 mr-1"></i> Saltar intro
-  </button>
-
-  <!-- Desbloquear -->
-  <button id="unlockBtn" onclick="resetHideTimeout(); unlockControls()" class="absolute top-2 right-2 z-50 text-white p-2 bg-black/50 rounded-full hidden">
-    <i data-lucide="unlock" class="w-6 h-6"></i>
-  </button>
-
-  <!-- Título -->
-  <div id="episodeTitle" class="absolute top-2 left-2 z-10 text-white text-sm text-outline hidden-controls"></div>
-
-  <!-- Controles -->
-  <div id="controls" class="absolute inset-0 flex flex-col justify-end px-4 pt-2 pb-4 hidden-controls">
-    <div class="flex-1 flex items-center justify-center">
-      <div class="flex items-center justify-center gap-72">
-        <button onclick="resetHideTimeout(); skip(-10)" class="active:text-red-600 icon-shadow animate-press">
-          <i data-lucide="rotate-ccw" class="w-8 h-8 text-white"></i>
-        </button>
-        <button id="playPauseBtn" onclick="resetHideTimeout(); togglePlay()" class="animate-press active:text-red-600 icon-shadow">
-          <i id="playPauseIcon" data-lucide="pause" class="w-10 h-10 text-white"></i>
-        </button>
-        <button onclick="resetHideTimeout(); skip(10)" class="active:text-red-600 icon-shadow animate-press">
-          <i data-lucide="rotate-cw" class="w-8 h-8 text-white"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Barra progreso -->
-    <div>
-      <input type="range" id="progress" min="0" value="0" step="1" class="w-full" />
-      <div class="flex justify-between text-xs text-white mt-1 text-outline">
-        <span id="currentTime">0:00</span>
-        <span id="totalTime">0:00</span>
-      </div>
-    </div>
-
-    <!-- Controles inferiores -->
-    <div id="bottomControls" class="grid grid-cols-5 text-white text-xs mt-2 gap-2 text-center">
-      <button onclick="resetHideTimeout(); toggleFullscreen()" class="flex flex-col items-center active:text-red-600 icon-shadow animate-press">
-        <i data-lucide="maximize" class="w-5 h-5 mb-1"></i><span class="text-outline">Pantalla completa</span>
-      </button>
-      <button onclick="resetHideTimeout(); toggleVideoFit(this)" class="flex flex-col items-center icon-shadow animate-press" id="fitBtn">
-        <i data-lucide="move" class="w-5 h-5 mb-1"></i><span class="text-outline">Ajuste</span>
-      </button>
-      <button onclick="location.href=capitulosURL" class="flex flex-col items-center active:text-red-600 icon-shadow animate-press">
-        <i data-lucide="layout-grid" class="w-5 h-5 mb-1"></i><span class="text-outline">Episodios</span>
-      </button>
-      <button id="lockBtn" onclick="toggleLock()" class="flex flex-col items-center active:text-red-600 icon-shadow animate-press">
-        <i id="lockIcon" data-lucide="lock" class="w-5 h-5 mb-1"></i><span id="lockText" class="text-outline">Bloquear</span>
-      </button>
-      <button onclick="location.href=sigEpisodio" class="flex flex-col items-center active:text-red-600 icon-shadow animate-press">
-        <i data-lucide="chevron-right" class="w-5 h-5 mb-1"></i><span class="text-outline">Sig. Episodio</span>
-      </button>
-    </div>
-  </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
-  const video = document.getElementById('video');
-  const playPauseIcon = document.getElementById('playPauseIcon');
-  const progress = document.getElementById('progress');
-  const currentTimeEl = document.getElementById('currentTime');
-  const totalTimeEl = document.getElementById('totalTime');
-  const controls = document.getElementById('controls');
-  const unlockBtn = document.getElementById('unlockBtn');
-  const episodeTitle = document.getElementById('episodeTitle');
-  const btnSkipIntro = document.getElementById('btnSkipIntro');
-  const lockBtn = document.getElementById('lockBtn');
-  const lockIcon = document.getElementById('lockIcon');
-  const lockText = document.getElementById('lockText');
-  const videoWrapper = document.getElementById('videoWrapper');
-  const cover = document.getElementById('cover');
-  const loadingSpinner = document.getElementById('loadingSpinner');
-  const fitBtn = document.getElementById('fitBtn');
+    // Parámetros configurables
+    const linkmp4 = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"; // URL MP4 o M3U8
+    const poster = "https://via.placeholder.com/1280x720.png?text=Portada+Nagi+Player";
+    const titulo = "Episodio 1 - Nagi Player";
+    const intro = 90; // Segundos hasta donde saltar intro
+    const sig = "siguiente.html"; // URL siguiente episodio
+    const capitulos = "episodios.html"; // URL lista de episodios
+    const subtitlesURL = ""; // Opcional: URL de subtítulos .vtt
 
-  let controlsVisible = true;
-  let locked = false;
-  let hideTimeout;
-  let isCoverMode = true;
+    // Elementos
+    const video = document.getElementById('video');
+    const controls = document.getElementById('controls');
+    const playPauseBtn = document.getElementById('playPause');
+    const rewindBtn = document.getElementById('rewind');
+    const forwardBtn = document.getElementById('forward');
+    const progress = document.getElementById('progress');
+    const currentTimeEl = document.getElementById('currentTime');
+    const durationEl = document.getElementById('duration');
+    const loading = document.getElementById('loading');
+    const skipIntroBtn = document.getElementById('skipIntro');
+    const lockBtn = document.getElementById('lock');
+    const unlockBtn = document.getElementById('unlock');
+    const fitModeBtn = document.getElementById('fitMode');
+    const fullscreenBtn = document.getElementById('fullscreen');
+    const nextEpisodeBtn = document.getElementById('nextEpisode');
+    const episodesBtn = document.getElementById('episodes');
+    const subtitlesTrack = document.getElementById('subtitles');
 
-  function togglePlay() {
-    if (video.paused || video.ended) {
-      video.play();
-      reemplazarIcono('pause');
+    // Configuración inicial
+    video.poster = poster;
+    document.getElementById('title').textContent = titulo;
+    if (subtitlesURL) {
+        subtitlesTrack.src = subtitlesURL;
     } else {
-      video.pause();
-      reemplazarIcono('play');
+        subtitlesTrack.remove();
     }
-  }
 
-  function reemplazarIcono(nuevoIcono) {
-    const contenedor = document.getElementById('playPauseIcon').parentNode;
-    const viejoIcono = document.getElementById('playPauseIcon');
-    const nuevo = document.createElement('i');
-    nuevo.setAttribute('data-lucide', nuevoIcono);
-    nuevo.className = 'w-10 h-10 text-white';
-    nuevo.id = 'playPauseIcon';
-    contenedor.replaceChild(nuevo, viejoIcono);
-    lucide.createIcons();
-  }
-
-  function startVideo() {
-    cover.classList.add('hidden');
-    video.play();
-    toggleFullscreen();
-    showControls();
-    lucide.createIcons();
-  }
-
-  function skip(seconds) {
-    video.currentTime += seconds;
-  }
-
-  function skipIntro() {
-    video.currentTime = introEnd;
-    btnSkipIntro.classList.add("hidden");
-  }
-
-  function toggleFullscreen() {
-    const elem = document.documentElement;
-    if (!document.fullscreenElement) {
-      elem.requestFullscreen?.();
+    // Cargar video
+    if (linkmp4.endsWith('.m3u8')) {
+        if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(linkmp4);
+            hls.attachMedia(video);
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = linkmp4;
+        } else {
+            alert("Tu navegador no soporta streaming HLS");
+        }
     } else {
-      document.exitFullscreen?.();
+        video.src = linkmp4;
     }
-  }
 
-  function formatTime(sec) {
-    const minutes = Math.floor(sec / 60);
-    const seconds = Math.floor(sec % 60).toString().padStart(2, '0');
-    return `${minutes}:${seconds}`;
-  }
+    // Mostrar loading
+    video.addEventListener('waiting', () => loading.style.display = 'block');
+    video.addEventListener('canplay', () => loading.style.display = 'none');
 
-  function showControls() {
-    if (locked) return;
-    controls.classList.add('show-controls');
-    controls.classList.remove('hidden-controls');
-    episodeTitle.classList.add('show-controls');
-    episodeTitle.classList.remove('hidden-controls');
-    controlsVisible = true;
-    resetHideTimeout();
-  }
+    // Reanudar progreso
+    const savedTime = localStorage.getItem(linkmp4);
+    if (savedTime) video.currentTime = savedTime;
 
-  function hideControls() {
-    if (locked) return;
-    controls.classList.remove('show-controls');
-    controls.classList.add('hidden-controls');
-    episodeTitle.classList.remove('show-controls');
-    episodeTitle.classList.add('hidden-controls');
-    controlsVisible = false;
-  }
+    // Guardar progreso
+    setInterval(() => localStorage.setItem(linkmp4, video.currentTime), 1000);
 
-  function toggleControls() {
-    if (locked) return;
-    controlsVisible ? hideControls() : showControls();
-  }
+    // Play/Pause
+    playPauseBtn.onclick = () => {
+        if (video.paused) {
+            video.play();
+            playPauseBtn.innerHTML = '<i data-lucide="pause"></i>';
+        } else {
+            video.pause();
+            playPauseBtn.innerHTML = '<i data-lucide="play"></i>';
+        }
+        lucide.createIcons({ replace: true });
+    };
 
-  function resetHideTimeout() {
-    if (locked) return;
-    clearTimeout(hideTimeout);
-    hideTimeout = setTimeout(hideControls, 3000);
-  }
+    // Rewind/FastForward
+    rewindBtn.onclick = () => video.currentTime -= 10;
+    forwardBtn.onclick = () => video.currentTime += 10;
 
-  function toggleLock() {
-    locked ? unlockControls() : lockControls();
-  }
+    // Progress
+    video.ontimeupdate = () => {
+        progress.value = (video.currentTime / video.duration) * 100;
+        currentTimeEl.textContent = formatTime(video.currentTime);
+        durationEl.textContent = formatTime(video.duration);
 
-  function lockControls() {
-    locked = true;
-    hideControls();
-    unlockBtn.classList.remove("hidden");
-    controls.classList.add("hidden");
-    btnSkipIntro.classList.add("hidden");
-    episodeTitle.classList.add("hidden");
-    lockBtn.classList.add("hidden");
-    lockIcon.setAttribute("data-lucide", "lock");
-    lockText.textContent = "Bloqueado";
-    lucide.createIcons();
-  }
+        // Mostrar botón saltar intro
+        if (video.currentTime <= intro) {
+            skipIntroBtn.classList.remove('hidden-absolute');
+        } else {
+            skipIntroBtn.classList.add('hidden-absolute');
+        }
+    };
+    progress.oninput = () => video.currentTime = (progress.value / 100) * video.duration;
 
-  function unlockControls() {
-    locked = false;
-    showControls();
-    unlockBtn.classList.add("hidden");
-    controls.classList.remove("hidden");
-    episodeTitle.classList.remove("hidden");
-    lockBtn.classList.remove("hidden");
-    lockIcon.setAttribute("data-lucide", "unlock");
-    lockText.textContent = "Bloquear";
-    lucide.createIcons();
-  }
+    // Saltar intro
+    skipIntroBtn.onclick = () => {
+        video.currentTime = intro;
+        skipIntroBtn.classList.add('hidden-absolute');
+    };
 
-  function toggleVideoFit(btn) {
-    isCoverMode = !isCoverMode;
-    video.classList.toggle('object-cover', isCoverMode);
-    video.classList.toggle('object-contain', !isCoverMode);
-    btn.classList.toggle('text-red-600', !isCoverMode);
-  }
+    // Fullscreen
+    fullscreenBtn.onclick = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    };
 
-  // Eventos del video
-  video.addEventListener('loadedmetadata', () => {
-    progress.max = Math.floor(video.duration);
-    totalTimeEl.textContent = formatTime(video.duration);
-    const savedTime = localStorage.getItem(storageKey);
-    if (savedTime) video.currentTime = parseFloat(savedTime);
-  });
+    // Ajustar fit/cover
+    fitModeBtn.onclick = () => {
+        video.style.objectFit = (video.style.objectFit === 'cover') ? 'contain' : 'cover';
+    };
 
-  video.addEventListener('timeupdate', () => {
-    progress.value = Math.floor(video.currentTime);
-    currentTimeEl.textContent = formatTime(video.currentTime);
-    if (video.currentTime >= introStart && video.currentTime <= introEnd) {
-      if (!locked) btnSkipIntro.classList.remove("hidden");
-    } else {
-      btnSkipIntro.classList.add("hidden");
+    // Bloquear controles
+    lockBtn.onclick = () => {
+        controls.classList.add('hidden');
+        lockBtn.classList.add('hidden-absolute');
+        unlockBtn.classList.remove('hidden-absolute');
+    };
+    unlockBtn.onclick = () => {
+        controls.classList.remove('hidden');
+        lockBtn.classList.remove('hidden-absolute');
+        unlockBtn.classList.add('hidden-absolute');
+    };
+
+    // Redirigir
+    nextEpisodeBtn.onclick = () => location.href = sig;
+    episodesBtn.onclick = () => location.href = capitulos;
+
+    // Ocultar controles tras 3 seg
+    let hideTimeout;
+    const showControls = () => {
+        controls.classList.remove('hidden');
+        clearTimeout(hideTimeout);
+        hideTimeout = setTimeout(() => controls.classList.add('hidden'), 3000);
+    };
+    document.getElementById('player').onclick = showControls;
+
+    // Helpers
+    function formatTime(seconds) {
+        const min = Math.floor(seconds / 60);
+        const sec = Math.floor(seconds % 60);
+        return `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
     }
-    localStorage.setItem(storageKey, video.currentTime);
-  });
 
-  video.addEventListener('waiting', () => loadingSpinner.classList.remove("hidden"));
-  video.addEventListener('canplay', () => loadingSpinner.classList.add("hidden"));
-  video.addEventListener('playing', () => loadingSpinner.classList.add("hidden"));
-  progress.addEventListener('input', () => {
-    resetHideTimeout();
-    video.currentTime = progress.value;
-  });
-
-  // Control de clic
-  videoWrapper.addEventListener('click', e => {
-    if (e.target.closest('button')) return;
-    toggleControls();
-  });
-
-  // Inicializar
-  window.addEventListener('load', () => {
-    lucide.createIcons();
-    resetHideTimeout();
-    video.src = videoLink;
-    episodeTitle.textContent = titulo;
-    document.getElementById('posterImage').src = posterURL;
-  });
+    // Render íconos
+    lucide.createIcons({ replace: true });
 </script>
 </body>
 </html>
