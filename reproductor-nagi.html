@@ -61,7 +61,7 @@
       <img id="coverImage" class="w-full h-full object-cover" />
       <button onclick="startVideo()" class="absolute inset-0 flex items-center justify-center">
         <div class="bg-white/20 backdrop-blur-sm p-4 rounded-full text-white animate-press">
-          <i data-lucide="play" class="w-12 h-12"></i>
+          <i id="playCoverIcon" data-lucide="play" class="w-12 h-12"></i>
         </div>
       </button>
     </div>
@@ -85,7 +85,6 @@
 
     <div id="episodeTitle" class="absolute top-2 left-2 z-10 text-white text-sm text-outline hidden-controls"></div>
 
-    <!-- Controles inferiores -->
     <div id="controls" class="absolute inset-0 flex flex-col justify-end px-4 pt-2 pb-4 hidden-controls transition duration-300">
       <div class="flex-1 flex items-center justify-center">
         <div class="flex items-center justify-center gap-72">
@@ -93,7 +92,7 @@
             <i data-lucide="rotate-ccw" class="w-8 h-8 text-white"></i>
           </button>
           <button id="playPauseBtn" onclick="resetHideTimeout(); togglePlay()" class="animate-press active:text-red-600 icon-shadow">
-            <i id="playPauseIcon" data-lucide="pause" class="w-10 h-10 text-white"></i>
+            <i id="playPauseIcon" data-lucide="play" class="w-10 h-10 text-white"></i>
           </button>
           <button onclick="resetHideTimeout(); skip(10)" class="active:text-red-600 icon-shadow animate-press">
             <i data-lucide="rotate-cw" class="w-8 h-8 text-white"></i>
@@ -165,6 +164,7 @@
       video.play();
       toggleFullscreen();
       showControls();
+      reemplazarIcono('pause');
       lucide.createIcons();
     }
 
@@ -188,12 +188,13 @@
     }
 
     function reemplazarIcono(nuevoIcono) {
-      const contenedor = playPauseIcon.parentNode;
+      const contenedor = document.getElementById('playPauseIcon').parentNode;
+      const viejoIcono = document.getElementById('playPauseIcon');
       const nuevo = document.createElement('i');
       nuevo.setAttribute('data-lucide', nuevoIcono);
       nuevo.className = 'w-10 h-10 text-white';
       nuevo.id = 'playPauseIcon';
-      contenedor.replaceChild(nuevo, playPauseIcon);
+      contenedor.replaceChild(nuevo, viejoIcono);
       lucide.createIcons();
     }
 
