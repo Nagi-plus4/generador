@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Generador de Código - NAGI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center h-screen p-6">
+
+  <div class="bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md text-center space-y-6">
+    <h1 class="text-3xl font-bold text-blue-400">🔐 Generador de Código - NAGI</h1>
+
+    <input type="text" id="nombreApp" placeholder="Escribe el nombre de la app"
+           class="w-full px-4 py-2 rounded bg-gray-700 border border-gray-600 text-center text-white focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+
+    <button onclick="generarCodigo()"
+            class="w-full bg-blue-600 hover:bg-blue-700 transition px-4 py-2 rounded font-bold">
+      Generar
+    </button>
+
+    <div id="resultado" class="hidden bg-gray-700 p-4 rounded text-lg flex items-center justify-between">
+      <span id="codigoGenerado" class="font-mono text-yellow-300"></span>
+      <button onclick="copiarCodigo()" class="text-blue-400 hover:text-blue-200 flex items-center text-sm">
+        <svg class="w-5 h-5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none"
+             viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 16h8M8 12h8m-6-4h6" />
+        </svg>
+        Copiar
+      </button>
+    </div>
+
+    <p id="mensajeError" class="text-red-400 hidden">❌ Debes escribir correctamente el nombre: <b>NAGI</b></p>
+  </div>
+
+  <!-- Toast copiado -->
+  <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded shadow-lg hidden transition-opacity duration-300">
+    ✅ Código copiado al portapapeles
+  </div>
+
+  <script>
+    const CODIGOS = [
+      "sonby_hm","YFT7BV8K","GZ47MXKQ82NTC","HDK92PLMVX37QWTA95EB","R8V5TXZ",
+      "KD84PL1","MWC29LKZ","TQ93NVMX","Z9FG72YJ","UJ38RV6P",
+      "LV9D5Q1T","KPXQ73MZ","YQ47DZMB","VBN26PKL","JD92ZMXQ",
+      "A8C2PMLD","senig_hm","NZ3QXKV8","ZP6YRVFQ","MCY29WLD",
+      "RZ72QLFD","XLM38PTV","GHP93KLF","VTY18WQL","WJQ29TZV",
+      "PQ9ZLMX7","YLB48MXR","CV92PZL1","DJK37XQW","ZXM49TYV",
+      "PLW93NKT","MBV73PLX","TRX91LKW","OQL28WYZ","HJ38VMNX",
+      "VLX92QKP","NZT84MQL","AJX20WLZ","MXD49PQV","WPX38KTL",
+      "ZXP91QWN","KLQ82YTM","YPL93TXQ","MCQ47PLZ","RNX58VTL",
+      "HPX92QMN","TYZ83NKW","LQX92MKT","FJW27TZM","nagi+"
+    ];
+
+    function generarCodigo() {
+      const entrada = document.getElementById("nombreApp").value.trim().toLowerCase();
+      const mensaje = document.getElementById("mensajeError");
+      const resultado = document.getElementById("resultado");
+      const codigoSpan = document.getElementById("codigoGenerado");
+
+      if (entrada === "nagi") {
+        const codigoAleatorio = CODIGOS[Math.floor(Math.random() * CODIGOS.length)];
+        codigoSpan.textContent = codigoAleatorio;
+        mensaje.classList.add("hidden");
+        resultado.classList.remove("hidden");
+      } else {
+        mensaje.classList.remove("hidden");
+        resultado.classList.add("hidden");
+      }
+    }
+
+    function copiarCodigo() {
+      const codigo = document.getElementById("codigoGenerado").textContent;
+      navigator.clipboard.writeText(codigo).then(() => {
+        const toast = document.getElementById("toast");
+        toast.classList.remove("hidden");
+        toast.classList.add("opacity-100");
+
+        setTimeout(() => {
+          toast.classList.add("opacity-0");
+          setTimeout(() => {
+            toast.classList.add("hidden");
+            toast.classList.remove("opacity-0", "opacity-100");
+          }, 300);
+        }, 2000);
+      });
+    }
+  </script>
+
+</body>
+</html>
