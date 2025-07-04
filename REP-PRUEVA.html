@@ -36,8 +36,7 @@
   const sigEpisodio = urlParams.get('sig') || '#';
   const capitulosURL = urlParams.get('capitulos') || '#';
   const posterURL = urlParams.get('poster') || '';
-  const introStart = parseInt(urlParams.get('intro')) || 0;
-  const introEnd = introStart + 20; // Duración de la intro: 20s
+  const introEnd = parseInt(urlParams.get('intro')) || 0;
   const outroStart = parseInt(urlParams.get('outro')) || 0;
 
   const progressKey = `nagi-progress-${videoLink}`;
@@ -99,8 +98,8 @@
     <div>
       <input type="range" id="progress" min="0" value="0" step="1" class="w-full cursor-pointer" />
       <div class="flex justify-between text-xs text-white mt-1 text-outline">
-        <span id="currentTime">0:00</span>
-        <span id="totalTime">0:00</span>
+        <span id="currentTime">00:00:00</span>
+        <span id="totalTime">00:00:00</span>
       </div>
     </div>
 
@@ -127,59 +126,21 @@
 
 <script>
   const video = document.getElementById('video');
-  const playPauseIcon = document.getElementById('playPauseIcon');
+  const btnSkipIntro = document.getElementById('btnSkipIntro');
   const progress = document.getElementById('progress');
   const currentTimeEl = document.getElementById('currentTime');
   const totalTimeEl = document.getElementById('totalTime');
-  const controls = document.getElementById('controls');
-  const unlockBtn = document.getElementById('unlockBtn');
-  const episodeTitle = document.getElementById('episodeTitle');
-  const btnSkipIntro = document.getElementById('btnSkipIntro');
-  const lockBtn = document.getElementById('lockBtn');
-  const lockIcon = document.getElementById('lockIcon');
-  const lockText = document.getElementById('lockText');
-  const videoWrapper = document.getElementById('videoWrapper');
-  const cover = document.getElementById('cover');
-  const loadingSpinner = document.getElementById('loadingSpinner');
-  const fitBtn = document.getElementById('fitBtn');
-
-  let controlsVisible = true;
-  let locked = false;
-  let hideTimeout;
-  let isCoverMode = true;
-  let lastTap = 0;
-
-  function togglePlay() {
-    if (video.paused || video.ended) {
-      video.play();
-      replaceIcon('pause');
-    } else {
-      video.pause();
-      replaceIcon('play');
-    }
-  }
-
-  function replaceIcon(newIcon) {
-    const container = document.getElementById('playPauseIcon').parentNode;
-    const oldIcon = document.getElementById('playPauseIcon');
-    const icon = document.createElement('i');
-    icon.setAttribute('data-lucide', newIcon);
-    icon.className = 'w-12 h-12 text-white';
-    icon.id = 'playPauseIcon';
-    container.replaceChild(icon, oldIcon);
-    lucide.createIcons();
-  }
+  let saveInterval;
 
   function startVideo() {
-    cover.classList.add('hidden');
+    document.getElementById('cover').classList.add('hidden');
     video.play();
     toggleFullscreen();
-    showControls();
-    lucide.createIcons();
   }
 
-  function skip(seconds) {
-    video.currentTime += seconds;
+  function togglePlay() {
+    if (video.paused) video.play();
+    else video.pause();
   }
 
   function skipIntro() {
@@ -189,142 +150,55 @@
   }
 
   function toggleFullscreen() {
-    const elem = document.documentElement;
-    if (!document.fullscreenElement) {
-      elem.requestFullscreen?.();
-    } else {
-      document.exitFullscreen?.();
-    }
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
   }
 
   function formatTime(sec) {
-    const minutes = Math.floor(sec / 60);
-    const seconds = Math.floor(sec % 60).toString().padStart(2, '0');
-    return `${minutes}:${seconds}`;
+    const h = Math.floor(sec / 3600).toString().padStart(2, '0');
+    const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
+    const s = Math.floor(sec % 60).toString().padStart(2, '0');
+    return `${h}:${m}:${s}`;
   }
 
-  function showControls() {
-    if (locked) return;
-    controls.classList.add('show-controls');
-    controls.classList.remove('hidden-controls');
-    episodeTitle.classList.add('show-controls');
-    episodeTitle.classList.remove('hidden-controls');
-    controlsVisible = true;
-    resetHideTimeout();
-  }
-
-  function hideControls() {
-    if (locked) return;
-    controls.classList.remove('show-controls');
-    controls.classList.add('hidden-controls');
-    episodeTitle.classList.remove('show-controls');
-    episodeTitle.classList.add('hidden-controls');
-    controlsVisible = false;
-  }
-
-  function toggleControls() {
-    if (locked) return;
-    controlsVisible ? hideControls() : showControls();
-  }
-
-  function resetHideTimeout() {
-    if (locked) return;
-    clearTimeout(hideTimeout);
-    hideTimeout = setTimeout(hideControls, 3000);
-  }
-
-  function toggleLock() {
-    locked ? unlockControls() : lockControls();
-  }
-
-  function lockControls() {
-    locked = true;
-    hideControls();
-    unlockBtn.classList.remove("hidden");
-    lockIcon.setAttribute("data-lucide", "lock");
-    lockText.textContent = "Bloqueado";
-    lucide.createIcons();
-  }
-
-  function unlockControls() {
-    locked = false;
-    showControls();
-    unlockBtn.classList.add("hidden");
-    lockIcon.setAttribute("data-lucide", "unlock");
-    lockText.textContent = "Bloquear";
-    lucide.createIcons();
-  }
-
-  function toggleVideoFit(btn) {
-    isCoverMode = !isCoverMode;
-    video.classList.toggle('object-cover', isCoverMode);
-    video.classList.toggle('object-contain', !isCoverMode);
-    btn.classList.toggle('active-red', !isCoverMode);
-  }
-
-  // Eventos del video
+  // Restaurar progreso
   video.addEventListener('loadedmetadata', () => {
     progress.max = Math.floor(video.duration);
     totalTimeEl.textContent = formatTime(video.duration);
-
-    // Restaurar progreso guardado
     const savedTime = localStorage.getItem(progressKey);
     if (savedTime) video.currentTime = parseFloat(savedTime);
-
-    // Ocultar botón saltar intro si ya se saltó
-    if (localStorage.getItem(skipIntroKey) === 'true') {
-      btnSkipIntro.classList.add('hidden');
-    }
   });
 
   video.addEventListener('timeupdate', () => {
     progress.value = Math.floor(video.currentTime);
     currentTimeEl.textContent = formatTime(video.currentTime);
 
-    // Mostrar botón Saltar Intro solo si no se ha saltado antes
-    if (video.currentTime >= introStart && video.currentTime <= introEnd && !localStorage.getItem(skipIntroKey)) {
-      btnSkipIntro.classList.remove("hidden");
+    // Mostrar Saltar Intro desde 0:00:00 hasta introEnd
+    if (
+      video.currentTime >= 0 &&
+      video.currentTime <= introEnd &&
+      !localStorage.getItem(skipIntroKey)
+    ) {
+      btnSkipIntro.classList.remove('hidden');
     } else {
-      btnSkipIntro.classList.add("hidden");
-    }
-
-    // Guardar progreso cada segundo
-    localStorage.setItem(progressKey, video.currentTime);
-
-    // Saltar al siguiente episodio al final
-    if (outroStart && video.currentTime >= outroStart - 1) {
-      location.href = sigEpisodio;
+      btnSkipIntro.classList.add('hidden');
     }
   });
 
-  video.addEventListener('waiting', () => loadingSpinner.classList.remove("hidden"));
-  video.addEventListener('canplay', () => loadingSpinner.classList.add("hidden"));
-  video.addEventListener('playing', () => loadingSpinner.classList.add("hidden"));
-
-  progress.addEventListener('input', () => {
-    resetHideTimeout();
-    video.currentTime = progress.value;
+  // Guardado automático cada 1s
+  video.addEventListener('play', () => {
+    saveInterval = setInterval(() => {
+      localStorage.setItem(progressKey, video.currentTime);
+    }, 1000);
   });
+  video.addEventListener('pause', () => clearInterval(saveInterval));
+  video.addEventListener('ended', () => clearInterval(saveInterval));
 
-  // Control de clic y doble toque
-  videoWrapper.addEventListener('click', e => {
-    if (e.target.closest('button')) return;
-    const now = Date.now();
-    if (now - lastTap < 300) {
-      togglePlay();
-    } else {
-      toggleControls();
-    }
-    lastTap = now;
-  });
-
-  // Inicializar
   window.addEventListener('load', () => {
-    lucide.createIcons();
-    resetHideTimeout();
     video.src = videoLink;
-    episodeTitle.textContent = titulo;
     document.getElementById('posterImage').src = posterURL;
+    document.getElementById('episodeTitle').textContent = titulo;
+    lucide.createIcons();
   });
 </script>
 </body>
