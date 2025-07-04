@@ -7,22 +7,34 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
-    * { user-select: none; }
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #000; }
+    * { user-select: none; touch-action: manipulation; }
     .hidden-controls { opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
     .show-controls { opacity: 1; pointer-events: auto; }
     input[type=range] {
-      appearance: none; height: 4px; background: #aaa;
+      appearance: none; height: 4px; background: #555; border-radius: 2px;
     }
     input[type=range]::-webkit-slider-thumb {
-      appearance: none; width: 12px; height: 12px; background: red; border-radius: 50%;
+      appearance: none; width: 14px; height: 14px; background: #e11d48; border-radius: 50%; cursor: pointer;
     }
     .text-outline {
-      text-shadow: 1px 1px 2px black, -1px -1px 2px black;
+      text-shadow: 1px 1px 3px black, -1px -1px 3px black;
     }
     .icon-shadow svg { filter: drop-shadow(1px 1px 2px black); }
     .animate-press:active { transform: scale(0.9); transition: transform 0.1s ease; }
-    .active-red { color: red !important; }
+    .active-red { color: #e11d48 !important; }
+    #loadingSpinner i {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .fade-in { animation: fadeIn 0.5s ease forwards; }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
   </style>
 </head>
 <body class="bg-black w-screen h-screen overflow-hidden">
@@ -43,47 +55,47 @@
 <div id="videoWrapper" class="w-screen h-screen fixed top-0 left-0 z-0">
   <!-- Portada -->
   <div id="cover" class="absolute inset-0 z-50 bg-black">
-    <img id="posterImage" src="" class="w-full h-full object-cover" />
+    <img id="posterImage" src="" class="w-full h-full object-cover fade-in" />
     <button onclick="startVideo()" class="absolute inset-0 flex items-center justify-center">
-      <div class="bg-white/20 backdrop-blur-sm p-4 rounded-full text-white animate-press">
+      <div class="bg-white/20 backdrop-blur-sm p-5 rounded-full text-white animate-press">
         <i data-lucide="play" class="w-12 h-12"></i>
       </div>
     </button>
   </div>
 
   <!-- Spinner -->
-  <div id="loadingSpinner" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/60">
-    <div class="animate-spin text-white mb-4">
+  <div id="loadingSpinner" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/70 hidden">
+    <div class="text-white mb-4 animate-spin">
       <i data-lucide="loader" class="w-10 h-10"></i>
     </div>
     <div class="text-white text-sm font-semibold text-outline">Cargando Nagi+...</div>
   </div>
 
   <!-- Video -->
-  <video id="video" class="w-full h-full object-cover" src="" playsinline></video>
+  <video id="video" class="w-full h-full object-cover" src="" playsinline preload="auto"></video>
 
   <!-- Saltar intro -->
-  <button id="btnSkipIntro" onclick="resetHideTimeout(); skipIntro()" class="absolute right-4 bottom-36 bg-white/20 text-white px-3 py-1 text-sm font-bold rounded-none z-50 backdrop-blur-sm hidden text-outline">
+  <button id="btnSkipIntro" onclick="resetHideTimeout(); skipIntro()" class="absolute right-4 bottom-36 bg-white/30 text-white px-3 py-1 text-sm font-bold rounded z-50 backdrop-blur-md hidden text-outline animate-press">
     <i data-lucide="fast-forward" class="inline-block w-4 h-4 mr-1"></i> Saltar intro
   </button>
 
   <!-- Desbloquear -->
-  <button id="unlockBtn" onclick="resetHideTimeout(); unlockControls()" class="absolute top-2 right-2 z-50 text-white p-2 bg-black/50 rounded-full hidden">
+  <button id="unlockBtn" onclick="resetHideTimeout(); unlockControls()" class="absolute top-3 right-3 z-50 text-white p-2 bg-black/50 rounded-full hidden animate-press">
     <i data-lucide="unlock" class="w-6 h-6"></i>
   </button>
 
   <!-- Título -->
-  <div id="episodeTitle" class="absolute top-2 left-2 z-10 text-white text-sm text-outline hidden-controls"></div>
+  <div id="episodeTitle" class="absolute top-3 left-3 z-10 text-white text-base font-bold text-outline hidden-controls"></div>
 
   <!-- Controles -->
-  <div id="controls" class="absolute inset-0 flex flex-col justify-end px-4 pt-2 pb-4 hidden-controls">
+  <div id="controls" class="absolute inset-0 flex flex-col justify-end px-4 pt-2 pb-5 hidden-controls">
     <div class="flex-1 flex items-center justify-center">
-      <div class="flex items-center justify-center gap-72">
+      <div class="flex items-center justify-center gap-32">
         <button onclick="resetHideTimeout(); skip(-10)" class="active:text-red-600 icon-shadow animate-press">
           <i data-lucide="rotate-ccw" class="w-8 h-8 text-white"></i>
         </button>
         <button id="playPauseBtn" onclick="resetHideTimeout(); togglePlay()" class="animate-press active:text-red-600 icon-shadow">
-          <i id="playPauseIcon" data-lucide="pause" class="w-10 h-10 text-white"></i>
+          <i id="playPauseIcon" data-lucide="pause" class="w-12 h-12 text-white"></i>
         </button>
         <button onclick="resetHideTimeout(); skip(10)" class="active:text-red-600 icon-shadow animate-press">
           <i data-lucide="rotate-cw" class="w-8 h-8 text-white"></i>
@@ -93,7 +105,7 @@
 
     <!-- Barra progreso -->
     <div>
-      <input type="range" id="progress" min="0" value="0" step="1" class="w-full" />
+      <input type="range" id="progress" min="0" value="0" step="1" class="w-full cursor-pointer" />
       <div class="flex justify-between text-xs text-white mt-1 text-outline">
         <span id="currentTime">0:00</span>
         <span id="totalTime">0:00</span>
@@ -101,7 +113,7 @@
     </div>
 
     <!-- Controles inferiores -->
-    <div id="bottomControls" class="grid grid-cols-5 text-white text-xs mt-2 gap-2 text-center">
+    <div id="bottomControls" class="grid grid-cols-5 text-white text-xs mt-3 gap-2 text-center">
       <button onclick="resetHideTimeout(); toggleFullscreen()" class="flex flex-col items-center active:text-red-600 icon-shadow animate-press">
         <i data-lucide="maximize" class="w-5 h-5 mb-1"></i><span class="text-outline">Pantalla completa</span>
       </button>
@@ -143,6 +155,7 @@
   let locked = false;
   let hideTimeout;
   let isCoverMode = true;
+  let lastTap = 0;
 
   function togglePlay() {
     if (video.paused || video.ended) {
@@ -159,7 +172,7 @@
     const viejoIcono = document.getElementById('playPauseIcon');
     const nuevo = document.createElement('i');
     nuevo.setAttribute('data-lucide', nuevoIcono);
-    nuevo.className = 'w-10 h-10 text-white';
+    nuevo.className = 'w-12 h-12 text-white';
     nuevo.id = 'playPauseIcon';
     contenedor.replaceChild(nuevo, viejoIcono);
     lucide.createIcons();
@@ -235,10 +248,6 @@
     locked = true;
     hideControls();
     unlockBtn.classList.remove("hidden");
-    controls.classList.add("hidden");
-    btnSkipIntro.classList.add("hidden");
-    episodeTitle.classList.add("hidden");
-    lockBtn.classList.add("hidden");
     lockIcon.setAttribute("data-lucide", "lock");
     lockText.textContent = "Bloqueado";
     lucide.createIcons();
@@ -248,9 +257,6 @@
     locked = false;
     showControls();
     unlockBtn.classList.add("hidden");
-    controls.classList.remove("hidden");
-    episodeTitle.classList.remove("hidden");
-    lockBtn.classList.remove("hidden");
     lockIcon.setAttribute("data-lucide", "unlock");
     lockText.textContent = "Bloquear";
     lucide.createIcons();
@@ -260,7 +266,7 @@
     isCoverMode = !isCoverMode;
     video.classList.toggle('object-cover', isCoverMode);
     video.classList.toggle('object-contain', !isCoverMode);
-    btn.classList.toggle('text-red-600', !isCoverMode);
+    btn.classList.toggle('active-red', !isCoverMode);
   }
 
   // Eventos del video
@@ -288,15 +294,22 @@
   video.addEventListener('waiting', () => loadingSpinner.classList.remove("hidden"));
   video.addEventListener('canplay', () => loadingSpinner.classList.add("hidden"));
   video.addEventListener('playing', () => loadingSpinner.classList.add("hidden"));
+
   progress.addEventListener('input', () => {
     resetHideTimeout();
     video.currentTime = progress.value;
   });
 
-  // Control de clic
+  // Control de clic y doble toque
   videoWrapper.addEventListener('click', e => {
     if (e.target.closest('button')) return;
-    toggleControls();
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      togglePlay();
+    } else {
+      toggleControls();
+    }
+    lastTap = now;
   });
 
   // Inicializar
