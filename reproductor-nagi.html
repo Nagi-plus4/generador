@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background: black; }
     * { user-select: none; }
     .hidden-controls { opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
     .show-controls { opacity: 1; pointer-events: auto; }
@@ -34,8 +34,7 @@
   const sigEpisodio = urlParams.get('sig') || '#';
   const capitulosURL = urlParams.get('capitulos') || '#';
   const posterURL = urlParams.get('poster') || '';
-  const introStart = parseInt(urlParams.get('intro')) || 0;
-  const introEnd = introStart + 20;
+  const introEnd = parseInt(urlParams.get('intro')) || 0;
   const storageKey = `nagi-progress-${videoLink}`;
 </script>
 
@@ -94,8 +93,8 @@
     <div>
       <input type="range" id="progress" min="0" value="0" step="1" class="w-full" />
       <div class="flex justify-between text-xs text-white mt-1 text-outline">
-        <span id="currentTime">0:00</span>
-        <span id="totalTime">0:00</span>
+        <span id="currentTime">0:00:00</span>
+        <span id="totalTime">0:00:00</span>
       </div>
     </div>
 
@@ -142,6 +141,7 @@
   let locked = false;
   let hideTimeout;
   let isCoverMode = true;
+  let saveInterval;
 
   function togglePlay() {
     if (video.paused || video.ended) {
@@ -165,11 +165,19 @@
   }
 
   function startVideo() {
+    if (!videoLink) {
+      alert("Error: No se encontró un enlace de video.");
+      return;
+    }
     cover.classList.add('hidden');
     video.play();
     toggleFullscreen();
     showControls();
     lucide.createIcons();
+    // Guardar progreso cada 1 segundo
+    saveInterval = setInterval(() => {
+      localStorage.setItem(storageKey, video.currentTime);
+    }, 1000);
   }
 
   function skip(seconds) {
@@ -191,9 +199,10 @@
   }
 
   function formatTime(sec) {
-    const minutes = Math.floor(sec / 60);
+    const hours = Math.floor(sec / 3600).toString().padStart(1, '0');
+    const minutes = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
     const seconds = Math.floor(sec % 60).toString().padStart(2, '0');
-    return `${minutes}:${seconds}`;
+    return `${hours}:${minutes}:${seconds}`;
   }
 
   function showControls() {
@@ -273,12 +282,13 @@
   video.addEventListener('timeupdate', () => {
     progress.value = Math.floor(video.currentTime);
     currentTimeEl.textContent = formatTime(video.currentTime);
-    if (video.currentTime >= introStart && video.currentTime <= introEnd) {
+
+    // Mostrar botón Saltar intro solo entre 0:00:00 e introEnd
+    if (video.currentTime >= 0 && video.currentTime < introEnd) {
       if (!locked) btnSkipIntro.classList.remove("hidden");
     } else {
       btnSkipIntro.classList.add("hidden");
     }
-    localStorage.setItem(storageKey, video.currentTime);
   });
 
   video.addEventListener('waiting', () => loadingSpinner.classList.remove("hidden"));
@@ -299,9 +309,13 @@
   window.addEventListener('load', () => {
     lucide.createIcons();
     resetHideTimeout();
-    video.src = videoLink;
-    episodeTitle.textContent = titulo;
-    document.getElementById('posterImage').src = posterURL;
+    if (videoLink) {
+      video.src = videoLink;
+      episodeTitle.textContent = titulo;
+      document.getElementById('posterImage').src = posterURL;
+    } else {
+      alert("No se proporcionó un enlace de video.");
+    }
   });
 </script>
 </body>
