@@ -33,7 +33,7 @@
   const capitulosURL = params.get('capitulos') || '#';
   const posterURL = params.get('poster') || '';
   const introStart = parseInt(params.get('intro')) || 0;
-  const introEnd = introStart + 20;
+  const introEnd = introStart + 20; // Saltar 20 segundos desde introStart
   const storageKey = `nagi-progress-${videoLink}`;
 </script>
 
@@ -172,7 +172,7 @@
   }
 
   function skipIntro() {
-    video.currentTime = introEnd;
+    video.currentTime = introEnd; // Saltar al final del intro
     btnSkipIntro.classList.add("hidden");
   }
 
@@ -244,13 +244,21 @@
   video.addEventListener('timeupdate', () => {
     progress.value = Math.floor(video.currentTime);
     currentTimeEl.textContent = formatTime(video.currentTime);
+
+    // Mostrar botón Saltar intro solo en el rango configurado
     if (video.currentTime >= introStart && video.currentTime <= introEnd) {
       if (!locked) btnSkipIntro.classList.remove("hidden");
     } else {
       btnSkipIntro.classList.add("hidden");
     }
-    localStorage.setItem(storageKey, video.currentTime);
   });
+
+  // Guardar progreso en localStorage cada segundo
+  setInterval(() => {
+    if (!video.paused && !video.ended) {
+      localStorage.setItem(storageKey, video.currentTime);
+    }
+  }, 1000);
 
   video.addEventListener('waiting', () => document.getElementById('loadingSpinner').classList.remove("hidden"));
   video.addEventListener('canplay', () => document.getElementById('loadingSpinner').classList.add("hidden"));
