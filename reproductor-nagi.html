@@ -7,23 +7,55 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
     * { user-select: none; }
     .hidden-controls { opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
     .show-controls { opacity: 1; pointer-events: auto; }
     input[type=range] {
-      appearance: none; height: 4px; background: #aaa;
+      appearance: none;
+      height: 4px;
+      background: #aaa;
     }
     input[type=range]::-webkit-slider-thumb {
-      appearance: none; width: 12px; height: 12px; background: red; border-radius: 50%; cursor: pointer;
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      background: red;
+      border-radius: 50%;
+      cursor: pointer;
     }
-    .text-outline { text-shadow: 1px 1px 2px black, -1px -1px 2px black; }
-    .icon-shadow svg { filter: drop-shadow(1px 1px 2px black); }
-    .animate-press:active { transform: scale(0.9); transition: transform 0.1s ease; }
-    .active-red { color: red !important; }
+    .text-outline {
+      text-shadow: 1px 1px 2px black, -1px -1px 2px black;
+    }
+    .icon-shadow svg {
+      filter: drop-shadow(1px 1px 2px black);
+    }
+    .animate-press:active {
+      transform: scale(0.9);
+      transition: transform 0.1s ease;
+    }
+    .active-red {
+      color: red !important;
+    }
   </style>
 </head>
 <body class="bg-black w-screen h-screen overflow-hidden">
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoLink = urlParams.get('linkmp4');
+    const titulo = urlParams.get('titulo');
+    const sigEpisodio = urlParams.get('sig');
+    const capitulosURL = urlParams.get('capitulos');
+    const posterURL = urlParams.get('poster');
+    const introTime = parseInt(urlParams.get('intro')) || 0;
+    const idtmdb = urlParams.get('idtmdb') || 'default';
+  </script>
+
   <div id="videoWrapper" class="w-screen h-screen fixed top-0 left-0 z-0">
     <div id="cover" class="absolute inset-0 z-50 bg-black">
       <img id="coverImage" class="w-full h-full object-cover" />
@@ -53,6 +85,7 @@
 
     <div id="episodeTitle" class="absolute top-2 left-2 z-10 text-white text-sm text-outline hidden-controls"></div>
 
+    <!-- Controles inferiores -->
     <div id="controls" class="absolute inset-0 flex flex-col justify-end px-4 pt-2 pb-4 hidden-controls transition duration-300">
       <div class="flex-1 flex items-center justify-center">
         <div class="flex items-center justify-center gap-72">
@@ -102,32 +135,33 @@
   </div>
 
   <script>
-    const params = new URLSearchParams(location.search);
-    const videoURL = params.get("linkmp4");
-    const titulo = params.get("titulo") || "";
-    const sigURL = params.get("sig");
-    const capitulosURL = params.get("capitulos");
-    const introEnd = parseInt(params.get("intro")) || 0;
-    const poster = params.get("poster") || "";
-    const idtmdb = params.get("idtmdb");
-
     const video = document.getElementById('video');
     const episodeTitle = document.getElementById('episodeTitle');
-
-    if (videoURL) video.src = videoURL;
-    episodeTitle.textContent = decodeURIComponent(titulo);
-    document.getElementById("btnSiguiente").onclick = () => { if (sigURL) location.href = sigURL; };
-    document.getElementById("btnEpisodios").onclick = () => { if (capitulosURL) location.href = capitulosURL; };
-    document.getElementById("coverImage").src = poster.startsWith("http") ? poster : `https://image.tmdb.org/t/p/w780/${poster}`;
-
     const btnSkipIntro = document.getElementById("btnSkipIntro");
-    const progress = document.getElementById("progress");
-    const currentTimeEl = document.getElementById("currentTime");
-    const totalTimeEl = document.getElementById("totalTime");
-    const loadingSpinner = document.getElementById("loadingSpinner");
+    const coverImage = document.getElementById("coverImage");
+    const playPauseIcon = document.getElementById('playPauseIcon');
+    const progress = document.getElementById('progress');
+    const currentTimeEl = document.getElementById('currentTime');
+    const totalTimeEl = document.getElementById('totalTime');
+    const controls = document.getElementById('controls');
+    const unlockBtn = document.getElementById('unlockBtn');
+    const lockBtn = document.getElementById('lockBtn');
+    const lockIcon = document.getElementById('lockIcon');
+    const lockText = document.getElementById('lockText');
+    const videoWrapper = document.getElementById('videoWrapper');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const fitBtn = document.getElementById('fitBtn');
+    let controlsVisible = true;
+    let locked = false;
+    let hideTimeout;
+    let isCoverMode = true;
+
+    if (videoLink) video.src = videoLink;
+    if (titulo) episodeTitle.textContent = decodeURIComponent(titulo);
+    if (posterURL) coverImage.src = posterURL;
 
     function startVideo() {
-      document.getElementById("cover").classList.add("hidden");
+      document.getElementById('cover').classList.add("hidden");
       video.play();
       toggleFullscreen();
       showControls();
@@ -135,73 +169,160 @@
     }
 
     function skipIntro() {
-      video.currentTime = introEnd;
+      video.currentTime = introTime;
       btnSkipIntro.classList.add("hidden");
     }
 
-    function skip(seconds) { video.currentTime += seconds; }
-    function toggleFullscreen() {
-      const el = document.documentElement;
-      if (!document.fullscreenElement) el.requestFullscreen?.();
-      else document.exitFullscreen?.();
+    function skip(seconds) {
+      video.currentTime += seconds;
     }
 
-    function showControls() {
-      document.getElementById('controls').classList.add('show-controls');
-      document.getElementById('controls').classList.remove('hidden-controls');
-      episodeTitle.classList.add('show-controls');
-      episodeTitle.classList.remove('hidden-controls');
+    function togglePlay() {
+      if (video.paused || video.ended) {
+        video.play();
+        reemplazarIcono('pause');
+      } else {
+        video.pause();
+        reemplazarIcono('play');
+      }
     }
 
     function reemplazarIcono(nuevoIcono) {
-      const contenedor = document.getElementById('playPauseIcon').parentNode;
-      const viejoIcono = document.getElementById('playPauseIcon');
+      const contenedor = playPauseIcon.parentNode;
       const nuevo = document.createElement('i');
       nuevo.setAttribute('data-lucide', nuevoIcono);
       nuevo.className = 'w-10 h-10 text-white';
       nuevo.id = 'playPauseIcon';
-      contenedor.replaceChild(nuevo, viejoIcono);
+      contenedor.replaceChild(nuevo, playPauseIcon);
       lucide.createIcons();
     }
 
-    document.getElementById("playPauseBtn").onclick = () => {
-      if (video.paused || video.ended) {
-        video.play(); reemplazarIcono("pause");
+    function formatTime(sec) {
+      const minutes = Math.floor(sec / 60);
+      const seconds = Math.floor(sec % 60).toString().padStart(2, '0');
+      return `${minutes}:${seconds}`;
+    }
+
+    function resetHideTimeout() {
+      if (locked) return;
+      clearTimeout(hideTimeout);
+      hideTimeout = setTimeout(hideControls, 3000);
+    }
+
+    function showControls() {
+      if (locked) return;
+      controls.classList.add('show-controls');
+      controls.classList.remove('hidden-controls');
+      episodeTitle.classList.add('show-controls');
+      episodeTitle.classList.remove('hidden-controls');
+      controlsVisible = true;
+      resetHideTimeout();
+    }
+
+    function hideControls() {
+      if (locked) return;
+      controls.classList.remove('show-controls');
+      controls.classList.add('hidden-controls');
+      episodeTitle.classList.remove('show-controls');
+      episodeTitle.classList.add('hidden-controls');
+      controlsVisible = false;
+    }
+
+    function toggleControls() {
+      if (locked) return;
+      controlsVisible ? hideControls() : showControls();
+    }
+
+    function toggleLock() {
+      locked ? unlockControls() : lockControls();
+    }
+
+    function lockControls() {
+      locked = true;
+      hideControls();
+      unlockBtn.classList.remove("hidden");
+      controls.classList.add("hidden");
+      btnSkipIntro.classList.add("hidden");
+      episodeTitle.classList.add("hidden");
+      lockBtn.classList.add("hidden");
+      lockIcon.setAttribute("data-lucide", "lock");
+      lockText.textContent = "Bloqueado";
+      lucide.createIcons();
+    }
+
+    function unlockControls() {
+      locked = false;
+      showControls();
+      unlockBtn.classList.add("hidden");
+      controls.classList.remove("hidden");
+      episodeTitle.classList.remove("hidden");
+      lockBtn.classList.remove("hidden");
+      lockIcon.setAttribute("data-lucide", "unlock");
+      lockText.textContent = "Bloquear";
+      lucide.createIcons();
+    }
+
+    function toggleFullscreen() {
+      const elem = document.documentElement;
+      if (!document.fullscreenElement) {
+        elem.requestFullscreen?.();
       } else {
-        video.pause(); reemplazarIcono("play");
+        document.exitFullscreen?.();
       }
-    };
+    }
+
+    function toggleVideoFit(btn) {
+      isCoverMode = !isCoverMode;
+      video.classList.toggle('object-cover', isCoverMode);
+      video.classList.toggle('object-contain', !isCoverMode);
+      btn.classList.toggle('text-red-600', !isCoverMode);
+    }
 
     video.addEventListener('loadedmetadata', () => {
       progress.max = Math.floor(video.duration);
       totalTimeEl.textContent = formatTime(video.duration);
+      const savedTime = localStorage.getItem("nagi-progress-" + idtmdb);
+      if (savedTime) video.currentTime = parseFloat(savedTime);
     });
 
     video.addEventListener('timeupdate', () => {
       progress.value = Math.floor(video.currentTime);
       currentTimeEl.textContent = formatTime(video.currentTime);
-      if (video.currentTime >= 0 && video.currentTime <= introEnd) btnSkipIntro.classList.remove("hidden");
-      else btnSkipIntro.classList.add("hidden");
-      if (idtmdb) localStorage.setItem(`progress_${idtmdb}`, video.currentTime);
+      if (video.currentTime >= introTime && video.currentTime <= introTime + 20) {
+        if (!locked) btnSkipIntro.classList.remove("hidden");
+      } else {
+        btnSkipIntro.classList.add("hidden");
+      }
+      localStorage.setItem("nagi-progress-" + idtmdb, video.currentTime);
     });
 
+    video.addEventListener('waiting', () => loadingSpinner.classList.remove("hidden"));
     video.addEventListener('canplay', () => loadingSpinner.classList.add("hidden"));
     video.addEventListener('playing', () => loadingSpinner.classList.add("hidden"));
-    video.addEventListener('waiting', () => loadingSpinner.classList.remove("hidden"));
 
-    function formatTime(sec) {
-      const m = Math.floor(sec / 60);
-      const s = Math.floor(sec % 60).toString().padStart(2, '0');
-      return `${m}:${s}`;
-    }
-
-    window.addEventListener("load", () => {
-      lucide.createIcons();
-      if (idtmdb) {
-        const saved = localStorage.getItem(`progress_${idtmdb}`);
-        if (saved) video.currentTime = parseFloat(saved);
-      }
+    progress.addEventListener('input', () => {
+      resetHideTimeout();
+      video.currentTime = progress.value;
     });
+
+    videoWrapper.addEventListener('click', e => {
+      if (e.target.closest('button')) return;
+      toggleControls();
+    });
+
+    window.addEventListener('load', () => {
+      lucide.createIcons();
+      resetHideTimeout();
+      if (video.readyState >= 3) loadingSpinner.classList.add("hidden");
+    });
+
+    document.getElementById("btnSiguiente").onclick = () => {
+      if (sigEpisodio) window.location.href = sigEpisodio;
+    };
+
+    document.getElementById("btnEpisodios").onclick = () => {
+      if (capitulosURL) window.location.href = capitulosURL;
+    };
   </script>
 </body>
 </html>
