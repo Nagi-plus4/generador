@@ -10,6 +10,9 @@
     .image-loading {
       @apply bg-gray-800 animate-pulse;
     }
+    .modal-bg {
+      background-color: rgba(0, 0, 0, 0.8);
+    }
   </style>
 </head>
 <body class="bg-black text-white font-sans">
@@ -26,7 +29,7 @@
     <nav id="mobileMenu" class="hidden md:flex gap-6 text-sm font-semibold">
       <a href="#" class="hover:text-pink-500">Inicio</a>
       <a href="#" class="hover:text-pink-500">Catálogo</a>
-      <a href="#" class="hover:text-pink-500">Contacto</a>
+      <a href="contacto.html" class="hover:text-pink-500">Contacto</a>
     </nav>
   </header>
 
@@ -38,19 +41,21 @@
       ¡NO TE CONFUNDAS! Esta es la versión completa de la aplicación, con todas las funciones desbloqueadas para disfrutar al 100%.
     </p>
 
-    <button class="mt-6 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full font-semibold">
+    <a href="olvide.html" class="mt-6 inline-block bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full font-semibold">
       OLVIDÉ MI CONTRASEÑA
-    </button>
+    </a>
 
     <p class="mt-6 text-gray-400">
       Únete a más de <strong class="text-white">+100,000 usuarios activos</strong> que usan Kawaii Animes.
     </p>
 
-    <a href="#" class="mt-4 inline-block bg-pink-600 hover:bg-pink-700 px-6 py-2 rounded-full text-white font-bold">
+    <a href="descargar.html" class="mt-4 inline-block bg-pink-600 hover:bg-pink-700 px-6 py-2 rounded-full text-white font-bold">
       <i data-lucide="download" class="inline w-5 h-5 mr-1"></i> DESCARGAR
     </a>
 
-    <p class="mt-2 text-sm text-red-400">Contacto: nagiplushm@gmail.com</p>
+    <p class="mt-2 text-sm text-red-400">
+      <a href="contacto.html" class="hover:underline">Contacto: nagiplushm@gmail.com</a>
+    </p>
   </section>
 
   <!-- Features -->
@@ -64,30 +69,37 @@
     </div>
   </section>
 
-  <!-- Screenshots con carga avanzada -->
+  <!-- Screenshots con modal -->
   <section class="bg-zinc-950 py-10 px-4 text-center">
     <h3 class="text-xl font-bold mb-6 text-white">Capturas de pantalla</h3>
     <div class="flex flex-wrap justify-center gap-6">
-      <div class="relative w-[150px] h-[260px] overflow-hidden rounded-xl shadow-lg bg-zinc-800">
+      <!-- Imagenes con onclick -->
+      <div class="relative w-[150px] h-[260px] overflow-hidden rounded-xl shadow-lg bg-zinc-800 cursor-pointer" onclick="openModal('https://i.ibb.co/gMkYbbz8/11-sin-t-tulo-20250704104046.png')">
         <img src="https://i.ibb.co/gMkYbbz8/11-sin-t-tulo-20250704104046.png" alt="App Screen" class="w-full h-full object-cover transition-opacity duration-500 opacity-0" onload="this.classList.remove('opacity-0')" loading="lazy">
       </div>
-      <div class="relative w-[150px] h-[260px] overflow-hidden rounded-xl shadow-lg bg-zinc-800">
+      <div class="relative w-[150px] h-[260px] overflow-hidden rounded-xl shadow-lg bg-zinc-800 cursor-pointer" onclick="openModal('https://i.ibb.co/Kx8zrmv1/img2nagi.jpg')">
         <img src="https://i.ibb.co/Kx8zrmv1/img2nagi.jpg" alt="App Screen" class="w-full h-full object-cover transition-opacity duration-500 opacity-0" onload="this.classList.remove('opacity-0')" loading="lazy">
       </div>
-      
-      <div class="relative w-[150px] h-[260px] overflow-hidden rounded-xl shadow-lg bg-zinc-800">
+      <div class="relative w-[150px] h-[260px] overflow-hidden rounded-xl shadow-lg bg-zinc-800 cursor-pointer" onclick="openModal('https://i.ibb.co/MyzCQVVC/nagi-previo.jpg')">
         <img src="https://i.ibb.co/MyzCQVVC/nagi-previo.jpg" alt="App Screen" class="w-full h-full object-cover transition-opacity duration-500 opacity-0" onload="this.classList.remove('opacity-0')" loading="lazy">
       </div>
-      <div class="relative w-[150px] h-[260px] overflow-hidden rounded-xl shadow-lg bg-zinc-800">
+      <div class="relative w-[150px] h-[260px] overflow-hidden rounded-xl shadow-lg bg-zinc-800 cursor-pointer" onclick="openModal('https://i.ibb.co/j9Ls538d/nagi-pro.jpg')">
         <img src="https://i.ibb.co/j9Ls538d/nagi-pro.jpg" alt="App Screen" class="w-full h-full object-cover transition-opacity duration-500 opacity-0" onload="this.classList.remove('opacity-0')" loading="lazy">
       </div>
     </div>
-      
-      
   </section>
 
+  <!-- Modal -->
+  <div id="imageModal" class="fixed inset-0 hidden items-center justify-center modal-bg z-50">
+    <div class="relative max-w-md w-full mx-auto p-4">
+      <button onclick="closeModal()" class="absolute top-2 right-2 bg-white text-black rounded-full p-1">
+        <i data-lucide="x"></i>
+      </button>
+      <img id="modalImage" src="" alt="Imagen ampliada" class="w-full rounded-xl shadow-lg border-4 border-white">
+    </div>
+  </div>
+
   <script>
-    // Iconos
     lucide.createIcons();
 
     // Menú móvil
@@ -101,7 +113,19 @@
         : '<i data-lucide="menu" class="text-white w-6 h-6"></i>';
       lucide.createIcons();
     });
-  </script>
 
+    // Modal funciones
+    function openModal(src) {
+      document.getElementById('modalImage').src = src;
+      document.getElementById('imageModal').classList.remove('hidden');
+      document.getElementById('imageModal').classList.add('flex');
+      lucide.createIcons();
+    }
+
+    function closeModal() {
+      document.getElementById('imageModal').classList.add('hidden');
+      document.getElementById('imageModal').classList.remove('flex');
+    }
+  </script>
 </body>
 </html>
