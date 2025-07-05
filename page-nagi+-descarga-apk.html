@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KawaiiAnimes Oficial</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    .image-loading {
+      @apply bg-gray-800 animate-pulse;
+    }
+  </style>
+</head>
+<body class="bg-black text-white font-sans">
+
+  <!-- Header -->
+  <header class="flex items-center justify-between px-4 py-3 bg-zinc-900 shadow sticky top-0 z-50">
+    <div class="flex items-center gap-2">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Kawaii_Logo.svg/64px-Kawaii_Logo.svg.png" alt="logo" class="w-8 h-8">
+      <h1 class="text-xl font-bold text-gray-200">KawaiiAnimes</h1>
+    </div>
+    <button id="menuBtn" class="md:hidden">
+      <i data-lucide="menu" class="text-white w-6 h-6"></i>
+    </button>
+    <nav id="mobileMenu" class="hidden md:flex gap-6 text-sm font-semibold">
+      <a href="#" class="hover:text-pink-500">Inicio</a>
+      <a href="#" class="hover:text-pink-500">Catálogo</a>
+      <a href="#" class="hover:text-pink-500">Contacto</a>
+    </nav>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="text-center py-10 px-4">
+    <h2 class="text-2xl md:text-4xl font-bold text-white">DESCARGA LA APP OFICIAL</h2>
+    <h3 class="text-pink-500 text-xl font-bold mt-1">KAWAII ANIMES</h3>
+    <p class="mt-4 text-gray-300 max-w-xl mx-auto">
+      ¡NO TE CONFUNDAS! Esta es la versión completa de la aplicación, con todas las funciones desbloqueadas para disfrutar al 100%.
+    </p>
+
+    <button class="mt-6 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full font-semibold">
+      OLVIDÉ MI CONTRASEÑA
+    </button>
+
+    <p class="mt-6 text-gray-400">
+      Únete a más de <strong class="text-white">+100,000 usuarios activos</strong> que usan Kawaii Animes.
+    </p>
+
+    <a href="#" class="mt-4 inline-block bg-pink-600 hover:bg-pink-700 px-6 py-2 rounded-full text-white font-bold">
+      <i data-lucide="download" class="inline w-5 h-5 mr-1"></i> DESCARGAR
+    </a>
+
+    <p class="mt-2 text-sm text-red-400">Contacto: konyajikino@gmail.com</p>
+  </section>
+
+  <!-- Features -->
+  <section class="bg-white text-black text-center py-8">
+    <h3 class="text-2xl font-bold mb-4">ANIMES EN ESPAÑOL LATINO</h3>
+    <div class="grid grid-cols-2 gap-4 text-sm font-semibold max-w-md mx-auto">
+      <div>• EPISODIOS DIARIOS</div>
+      <div>• ESTRENOS SEMANALES</div>
+      <div>• DISPONIBLES EN HD</div>
+      <div>• SERIES ANTIGUAS</div>
+    </div>
+  </section>
+
+  <!-- Screenshots con carga avanzada -->
+  <section class="bg-zinc-950 py-10 px-4 text-center">
+    <h3 class="text-xl font-bold mb-6 text-white">Capturas de pantalla</h3>
+    <div class="flex flex-wrap justify-center gap-6">
+      <div class="relative w-[150px] h-[260px] overflow-hidden rounded-xl shadow-lg bg-zinc-800">
+        <img src="https://placehold.co/200x400?text=Pantalla+1" alt="App Screen" class="w-full h-full object-cover transition-opacity duration-500 opacity-0" onload="this.classList.remove('opacity-0')" loading="lazy">
+      </div>
+      <div class="relative w-[150px] h-[260px] overflow-hidden rounded-xl shadow-lg bg-zinc-800">
+        <img src="https://placehold.co/200x400?text=Pantalla+2" alt="App Screen" class="w-full h-full object-cover transition-opacity duration-500 opacity-0" onload="this.classList.remove('opacity-0')" loading="lazy">
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // Iconos
+    lucide.createIcons();
+
+    // Menú móvil
+    const menuBtn = document.getElementById('menuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    menuBtn.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+      mobileMenu.classList.toggle('flex');
+      menuBtn.innerHTML = mobileMenu.classList.contains('flex')
+        ? '<i data-lucide="x" class="text-white w-6 h-6"></i>'
+        : '<i data-lucide="menu" class="text-white w-6 h-6"></i>';
+      lucide.createIcons();
+    });
+  </script>
+
+</body>
+</html>
