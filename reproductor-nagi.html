@@ -7,15 +7,58 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background: black; }
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
     * { user-select: none; }
     .hidden-controls { opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
     .show-controls { opacity: 1; pointer-events: auto; }
+
+    /* Barra de progreso mejorada */
     input[type=range] {
-      appearance: none; height: 4px; background: #aaa;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: transparent;
+      position: relative;
+      z-index: 2;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      height: 6px;
+      background: linear-gradient(to right, red, #ff5e00);
+      border-radius: 9999px;
+      box-shadow: 0 0 4px rgba(255, 0, 0, 0.5);
+    }
+    input[type=range]::-moz-range-track {
+      height: 6px;
+      background: linear-gradient(to right, red, #ff5e00);
+      border-radius: 9999px;
+      box-shadow: 0 0 4px rgba(255, 0, 0, 0.5);
     }
     input[type=range]::-webkit-slider-thumb {
-      appearance: none; width: 12px; height: 12px; background: red; border-radius: 50%;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      background: white;
+      border: 2px solid red;
+      border-radius: 50%;
+      cursor: pointer;
+      margin-top: -4px;
+      transition: transform 0.2s ease;
+      box-shadow: 0 0 4px rgba(255, 0, 0, 0.5);
+    }
+    input[type=range]:hover::-webkit-slider-thumb {
+      transform: scale(1.1);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      background: white;
+      border: 2px solid red;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 4px rgba(255, 0, 0, 0.5);
+    }
+    input[type=range]:hover::-moz-range-thumb {
+      transform: scale(1.1);
     }
     .text-outline {
       text-shadow: 1px 1px 2px black, -1px -1px 2px black;
@@ -36,6 +79,80 @@
   const posterURL = urlParams.get('poster') || '';
   const introEnd = parseInt(urlParams.get('intro')) || 0;
   const storageKey = `nagi-progress-${videoLink}`;
+</script>
+
+<div id="videoWrapper" class="w-screen h-screen fixed top-0 left-0 z-0">
+  <div id="cover" class="absolute inset-0 z-50 bg-black">
+    <img id="posterImage" src="" class="w-full h-full object-cover" />
+    <button onclick="startVideo()" class="absolute inset-0 flex items-center justify-center">
+      <div class="bg-white/20 backdrop-blur-sm p-4 rounded-full text-white animate-press">
+        <i data-lucide="play" class="w-12 h-12"></i>
+      </div>
+    </button>
+  </div>
+
+  <div id="loadingSpinner" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/60">
+    <div class="animate-spin text-white mb-4">
+      <i data-lucide="loader" class="w-10 h-10"></i>
+    </div>
+    <div class="text-white text-sm font-semibold text-outline">Cargando Nagi+...</div>
+  </div>
+
+  <video id="video" class="w-full h-full object-cover" src="" playsinline></video>
+
+  <button id="btnSkipIntro" onclick="resetHideTimeout(); skipIntro()" class="absolute right-4 bottom-36 bg-white/20 text-white px-3 py-1 text-sm font-bold rounded-none z-50 backdrop-blur-sm hidden text-outline">
+    <i data-lucide="fast-forward" class="inline-block w-4 h-4 mr-1"></i> Saltar intro
+  </button>
+
+  <button id="unlockBtn" onclick="resetHideTimeout(); unlockControls()" class="absolute top-2 right-2 z-50 text-white p-2 bg-black/50 rounded-full hidden">
+    <i data-lucide="unlock" class="w-6 h-6"></i>
+  </button>
+
+  <div id="episodeTitle" class="absolute top-2 left-2 z-10 text-white text-sm text-outline hidden-controls"></div>
+
+  <div id="controls" class="absolute inset-0 flex flex-col justify-end px-4 pt-2 pb-4 hidden-controls">
+    <div class="flex-1 flex items-center justify-center">
+      <div class="flex items-center justify-center gap-72">
+        <button onclick="resetHideTimeout(); skip(-10)" class="active:text-red-600 icon-shadow animate-press">
+          <i data-lucide="rotate-ccw" class="w-8 h-8 text-white"></i>
+        </button>
+        <button id="playPauseBtn" onclick="resetHideTimeout(); togglePlay()" class="animate-press active:text-red-600 icon-shadow">
+          <i id="playPauseIcon" data-lucide="pause" class="w-10 h-10 text-white"></i>
+        </button>
+        <button onclick="resetHideTimeout(); skip(10)" class="active:text-red-600 icon-shadow animate-press">
+          <i data-lucide="rotate-cw" class="w-8 h-8 text-white"></i>
+        </button>
+      </div>
+    </div>
+
+    <div>
+      <input type="range" id="progress" min="0" value="0" step="1" class="w-full" />
+      <div class="flex justify-between text-xs text-white mt-1 text-outline">
+        <span id="currentTime">0:00:00</span>
+        <span id="totalTime">0:00:00</span>
+      </div>
+    </div>
+
+    <div id="bottomControls" class="grid grid-cols-5 text-white text-xs mt-2 gap-2 text-center">
+      <button onclick="resetHideTimeout(); toggleFullscreen()" class="flex flex-col items-center active:text-red-600 icon-shadow animate-press">
+        <i data-lucide="maximize" class="w-5 h-5 mb-1"></i><span class="text-outline">Pantalla completa</span>
+      </button>
+      <button onclick="resetHideTimeout(); toggleVideoFit(this)" class="flex flex-col items-center icon-shadow animate-press" id="fitBtn">
+        <i data-lucide="move" class="w-5 h-5 mb-1"></i><span class="text-outline">Ajuste</span>
+      </button>
+      <button onclick="location.href=capitulosURL" class="flex flex-col items-center active:text-red-600 icon-shadow animate-press">
+        <i data-lucide="layout-grid" class="w-5 h-5 mb-1"></i><span class="text-outline">Episodios</span>
+      </button>
+      <button id="lockBtn" onclick="toggleLock()" class="flex flex-col items-center active:text-red-600 icon-shadow animate-press">
+        <i id="lockIcon" data-lucide="lock" class="w-5 h-5 mb-1"></i><span id="lockText" class="text-outline">Bloquear</span>
+      </button>
+      <button onclick="location.href=sigEpisodio" class="flex flex-col items-center active:text-red-600 icon-shadow animate-press">
+        <i data-lucide="chevron-right" class="w-5 h-5 mb-1"></i><span class="text-outline">Sig. Episodio</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 </script>
 
 <div id="videoWrapper" class="w-screen h-screen fixed top-0 left-0 z-0">
@@ -165,10 +282,6 @@
   }
 
   function startVideo() {
-    if (!videoLink) {
-      alert("Error: No se encontró un enlace de video.");
-      return;
-    }
     cover.classList.add('hidden');
     video.play();
     toggleFullscreen();
@@ -309,14 +422,9 @@
   window.addEventListener('load', () => {
     lucide.createIcons();
     resetHideTimeout();
-    if (videoLink) {
-      video.src = videoLink;
-      episodeTitle.textContent = titulo;
-      document.getElementById('posterImage').src = posterURL;
-    } else {
-      alert("No se proporcionó un enlace de video.");
-    }
+    video.src = videoLink;
+    episodeTitle.textContent = titulo;
+    document.getElementById('posterImage').src = posterURL;
   });
 </script>
 </body>
-</html>
