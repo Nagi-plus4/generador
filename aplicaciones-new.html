@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Apps Nagi+</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .shimmer {
+      background: linear-gradient(to right, #333 0%, #444 20%, #333 40%, #333 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+  </style>
+</head>
+<body class="bg-black text-white font-sans">
+
+  <!-- Lista de Apps -->
+  <section id="appList" class="max-w-md mx-auto p-4">
+    <h2 class="text-xl font-bold mb-6 text-center">QUISA TE INTERECE</h2>
+
+    <!-- App Card -->
+    <div class="space-y-4">
+      <!-- Cada app -->
+      <div class="flex items-center bg-zinc-900 p-3 rounded shadow hover:bg-zinc-800 transition cursor-pointer"
+           onclick="showDetails('Shortik','https://www.appcreator24.com/srv/imgs/gen/3648332_ico.png?v=3','31.1k descargas','Esta aplicacion es similar a youtube shorts y a tiktok puedes disfrutar de contenido aqui de tus creadores de contenido o crear tu propio contenido','★★★★☆','hthttps://apk.e-droid.net/apk/app3648332-yx9iou.apk?v=3',['https://i.ibb.co/S44TCvXV/Imagen-de-Whats-App-2025-07-08-a-las-21-45-44-bf0b1b6c.jpg','https://i.ibb.co/60Rsb0yP/Imagen-de-Whats-App-2025-07-08-a-las-21-45-44-820e8ac6.jpg'])">
+        <div class="w-12 h-12 mr-4 relative">
+          <div class="absolute inset-0 shimmer rounded" id="loader-whatsapp"></div>
+          <img src="https://www.appcreator24.com/srv/imgs/gen/3648332_ico.png?v=3" class="w-12 h-12 rounded hidden" onload="hideLoader('loader-whatsapp', this)">
+        </div>
+        <div>
+          <h3 class="font-semibold">Shortik</h3>
+          <p class="text-sm text-gray-400">3.1k descargas</p>
+          <div class="text-yellow-400 text-sm">★★★★☆</div>
+        </div>
+      </div>
+
+      <div class="flex items-center bg-zinc-900 p-3 rounded shadow hover:bg-zinc-800 transition cursor-pointer"
+           onclick="showDetails('Facebook','https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg','13.5k descargas','Conecta con tus amigos, publica fotos, videos y estados. Facebook es la red social más usada del mundo. Ideal para compartir lo que piensas con tus seguidores.','★★★★☆','https://example.com/facebook.apk',['https://i.ibb.co/MyzCQVVC/nagi-previo.jpg','https://i.ibb.co/j9Ls538d/nagi-pro.jpg'])">
+        <div class="w-12 h-12 mr-4 relative">
+          <div class="absolute inset-0 shimmer rounded" id="loader-fb"></div>
+          <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" class="w-12 h-12 rounded hidden" onload="hideLoader('loader-fb', this)">
+        </div>
+        <div>
+          <h3 class="font-semibold">Facebook</h3>
+          <p class="text-sm text-gray-400">13.5k descargas</p>
+          <div class="text-yellow-400 text-sm">★★★★☆</div>
+        </div>
+      </div>
+
+      <div class="flex items-center bg-zinc-900 p-3 rounded shadow hover:bg-zinc-800 transition cursor-pointer"
+           onclick="showDetails('Instagram','https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png','18.2k descargas','Instagram es una plataforma social para compartir fotos y videos con filtros, efectos, historias y más. Conecta, sigue a tus ídolos y muestra tu creatividad.','★★★★★','https://example.com/instagram.apk',['https://i.ibb.co/Kx8zrmv1/img2nagi.jpg','https://i.ibb.co/j9Ls538d/nagi-pro.jpg'])">
+        <div class="w-12 h-12 mr-4 relative">
+          <div class="absolute inset-0 shimmer rounded" id="loader-ig"></div>
+          <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" class="w-12 h-12 rounded hidden" onload="hideLoader('loader-ig', this)">
+        </div>
+        <div>
+          <h3 class="font-semibold">Instagram</h3>
+          <p class="text-sm text-gray-400">18.2k descargas</p>
+          <div class="text-yellow-400 text-sm">★★★★★</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Detalles -->
+  <section id="appDetails" class="max-w-md mx-auto p-4 hidden">
+    <button onclick="backToList()" class="mb-4 text-sm text-blue-400 hover:underline">← Volver</button>
+    <div class="bg-zinc-900 rounded shadow p-4">
+      <img id="detailImage" src="" alt="Icono" class="w-16 h-16 rounded mb-4 shimmer" onload="this.classList.remove('shimmer')">
+      <h2 id="detailTitle" class="text-xl font-bold mb-1"></h2>
+      <p id="detailDownloads" class="text-sm text-gray-400 mb-1"></p>
+      <div id="detailRating" class="text-yellow-400 text-sm mb-2"></div>
+
+      <!-- Descripción -->
+      <p id="shortDesc" class="text-sm mb-2"></p>
+      <button id="toggleDescBtn" onclick="toggleDescription()" class="text-sm text-blue-400 hover:underline mb-4">Ver más</button>
+      <p id="fullDesc" class="text-sm mb-4 hidden"></p>
+
+      <!-- Galería -->
+      <div id="gallery" class="flex overflow-x-auto gap-2 mb-4"></div>
+
+      <a id="detailLink" href="#" class="block bg-green-600 hover:bg-green-700 text-white text-center px-4 py-2 rounded font-semibold" download>
+        Descargar APK
+      </a>
+    </div>
+  </section>
+
+  <!-- Script -->
+  <script>
+    let fullDescContent = '';
+
+    function hideLoader(loaderId, img) {
+      document.getElementById(loaderId).style.display = "none";
+      img.classList.remove('hidden');
+    }
+
+    function showDetails(title, imageUrl, downloads, desc, rating, apkUrl, galleryUrls) {
+      document.getElementById('appList').classList.add('hidden');
+      document.getElementById('appDetails').classList.remove('hidden');
+
+      document.getElementById('detailTitle').textContent = title;
+      document.getElementById('detailImage').src = imageUrl;
+      document.getElementById('detailDownloads').textContent = downloads;
+      document.getElementById('detailRating').textContent = rating;
+      document.getElementById('detailLink').href = apkUrl;
+
+      fullDescContent = desc;
+      const shortText = desc.length > 100 ? desc.slice(0, 100) + "..." : desc;
+      document.getElementById('shortDesc').textContent = shortText;
+      document.getElementById('fullDesc').textContent = desc;
+      document.getElementById('fullDesc').classList.add('hidden');
+      document.getElementById('shortDesc').classList.remove('hidden');
+      document.getElementById('toggleDescBtn').textContent = "Ver más";
+
+      const galleryDiv = document.getElementById('gallery');
+      galleryDiv.innerHTML = "";
+      galleryUrls.forEach((url, index) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "relative w-28 h-44";
+        const shimmer = document.createElement("div");
+        shimmer.className = "absolute inset-0 shimmer rounded";
+        shimmer.id = `gallery-loader-${index}`;
+        const img = document.createElement("img");
+        img.src = url;
+        img.className = "w-full h-full object-cover rounded hidden";
+        img.onload = () => {
+          shimmer.style.display = "none";
+          img.classList.remove("hidden");
+        };
+        wrapper.appendChild(shimmer);
+        wrapper.appendChild(img);
+        galleryDiv.appendChild(wrapper);
+      });
+    }
+
+    function toggleDescription() {
+      const fullDesc = document.getElementById('fullDesc');
+      const shortDesc = document.getElementById('shortDesc');
+      const btn = document.getElementById('toggleDescBtn');
+
+      if (fullDesc.classList.contains('hidden')) {
+        fullDesc.classList.remove('hidden');
+        shortDesc.classList.add('hidden');
+        btn.textContent = "Ver menos";
+      } else {
+        fullDesc.classList.add('hidden');
+        shortDesc.classList.remove('hidden');
+        btn.textContent = "Ver más";
+      }
+    }
+
+    function backToList() {
+      document.getElementById('appList').classList.remove('hidden');
+      document.getElementById('appDetails').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
