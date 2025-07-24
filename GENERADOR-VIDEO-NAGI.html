@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Generador de VIDEO URL</title>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
@@ -18,13 +18,7 @@
       align-items: center;
       gap: 0.5rem;
     }
-    .icon {
-      color: #38bdf8;
-    }
-    .preview {
-      background-size: cover;
-      background-position: center;
-    }
+    .icon { color: #38bdf8; }
     .suggestions {
       position: absolute;
       z-index: 10;
@@ -70,7 +64,6 @@
       Generador de URL TMDB
     </h1>
 
-    <!-- 🔎 Buscador TMDB -->
     <div class="mb-4 relative">
       <div class="input-group">
         <i data-lucide="search" class="icon"></i>
@@ -180,7 +173,7 @@
     const suggestionsBox = document.getElementById('suggestions');
     const idtmdbInput = document.getElementById('idtmdb');
 
-    // Cerrar sugerencias al hacer clic fuera
+
     document.addEventListener('click', (e) => {
       if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
         suggestionsBox.classList.add('hidden');
@@ -205,7 +198,7 @@
         if (data.results.length === 0) {
           const noResult = document.createElement('div');
           noResult.className = 'suggestion-item';
-          noResult.textContent = "❌ Sin resultados";
+          noResult.textContent = "Sin resultados";
           suggestionsBox.appendChild(noResult);
         } else {
           data.results.forEach(item => {
@@ -259,32 +252,44 @@
       let poster = "";
 
       try {
-        const url = `https://api.themoviedb.org/3/${contentType}/${idtmdb}?api_key=${apiKey}&language=es-ES`;
-        const response = await fetch(url);
+
+        const baseUrl = `https://api.themoviedb.org/3/${contentType}/${idtmdb}?api_key=${apiKey}&language=es-ES`;
+        const response = await fetch(baseUrl);
         const data = await response.json();
 
-        if (data && data.poster_path) {
-          poster = `https://image.tmdb.org/t/p/original${data.poster_path}`;
-          titulo = contentType === "movie" ? data.title : data.name;
-        } else {
-          alert("❌ No se encontró poster para ese ID TMDB.");
+        titulo = contentType === "movie" ? data.title : data.name;
+        poster = data.poster_path ? `https://image.tmdb.org/t/p/original${data.poster_path}` : "";
+
+
+        if (contentType === "tv" && temporada && capitulo) {
+          const episodeUrl = `https://api.themoviedb.org/3/tv/${idtmdb}/season/${temporada}/episode/${capitulo}?api_key=${apiKey}&language=es-ES`;
+          const episodeResponse = await fetch(episodeUrl);
+          const episodeData = await episodeResponse.json();
+
+
+          if (episodeData.still_path) {
+            poster = `https://image.tmdb.org/t/p/original${episodeData.still_path}`;
+          }
+
+
+          titulo += ` (T${temporada} - E${capitulo})`;
+        }
+
+        if (!poster) {
+          alert("No se encontró poster para ese ID TMDB.");
           return;
         }
       } catch (err) {
-        alert("⚠️ Error al obtener datos de TMDB.");
+        alert("Error al obtener datos de TMDB.");
         return;
       }
 
-      if (contentType === "tv" && temporada && capitulo) {
-        titulo += ` (T${temporada} - E${capitulo})`;
-      }
-
-      const baseURL = "https://nagi-plus4.github.io/generador/REP-PRUEVA.html";
+      const basePlayerURL = "https://nagi-plus4.github.io/generador/REP-PRUEVA.html";
       const params = new URLSearchParams({
         linkmp4, titulo, sig, capitulos, poster, intro
       });
 
-      const finalURL = `${baseURL}?${params.toString()}`;
+      const finalURL = `${basePlayerURL}?${params.toString()}`;
       generatedURL.value = finalURL;
       openPlayer.href = finalURL;
       iframePreview.src = finalURL;
